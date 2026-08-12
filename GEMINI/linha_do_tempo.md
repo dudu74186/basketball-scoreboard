@@ -55,12 +55,21 @@ Fase 10 → Testes de campo real + refinamento do modelo + documentação final
   resolvido.** Falta só GitHub para fechar a Fase 0.
 
 ### Fase 1 — Repositório e versionamento
-- Criar repositório no GitHub (público ou privado — a decidir).
-- Definir estrutura de monorepo (pastas `ia/`, `backend/`, `frontend/`, `db/`,
-  `mobile/`, `infra/` ou `docker/`) vs. multi-repo.
-- `.gitignore` adequado a cada linguagem, README inicial, licença.
-- Estratégia de branches (ex.: `main` protegida + branches de feature) — bom gancho
-  para ensinar boas práticas de Git.
+- ✅ Repositório criado: **https://github.com/dudu74186/basketball-scoreboard**
+  (público), em 11/08/2026.
+- ✅ Estrutura de monorepo definida e criada: `ia/`, `backend/`, `frontend/`,
+  `db/`, `docker/` (com `.gitkeep`; `mobile/` ainda não criado, só na Fase 9).
+- ✅ `.gitignore` cobrindo mídia pesada (`*.mp4`, `*.pt`), `runs/`,
+  `__pycache__/`, `node_modules/`, `/target/` (Rust), `.obsidian/`, segredos.
+- ✅ README inicial na raiz.
+- ✅ `ia/main.py` (movido de `main.py`, conteúdo inalterado).
+- ⏳ Licença: ainda a definir.
+- ⏳ Estratégia de branches (proteção de `main` + branches de feature): ainda
+  não configurada — todo o trabalho até aqui foi direto em `main`.
+- Identidade de commit configurada localmente (git config deste repo, não
+  global): nome "Eduardo Vitor", e-mail noreply do GitHub
+  (`107815999+dudu74186@users.noreply.github.com`), escolhido pelo usuário
+  para manter o e-mail pessoal fora do histórico público.
 
 ### Fase 2 — Containerizar o serviço de IA existente
 - Escrever um `Dockerfile` para o `main.py`/YOLO atual, isolando dependências
@@ -134,6 +143,9 @@ Detalhes de cada decisão em [[sugestoes]].
 1. ~~Instalar Docker na máquina Linux~~ — feito e validado (`docker run
    hello-world` confirmado em 11/08/2026). Ver [[requisitos_ambiente]] e
    [[sessao_atual]].
-2. Decidir GitHub: repositório público ou privado, nome do repositório (Fase 1).
+2. ~~Decidir GitHub: repositório público ou privado, nome do repositório~~ —
+   feito. Repositório público criado:
+   https://github.com/dudu74186/basketball-scoreboard (Fase 1 concluída,
+   exceto licença e estratégia de branches).
 3. Instalar toolchain do Rust (`rustup`) — a confirmar se localmente ou só dentro do
-   container Docker.
+   container Docker (próximo passo natural: Fase 2, containerizar o serviço de IA).

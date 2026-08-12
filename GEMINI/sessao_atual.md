@@ -126,9 +126,49 @@ corretamente e a instalação está 100% operacional.
 está quase completa — falta apenas criar o repositório no GitHub.
 
 **Próximos Passos na Retomada:**
-1. Decidir com o usuário: repositório GitHub público ou privado, e o nome do
-   repositório (Fase 1 de [[linha_do_tempo]]).
-2. Criar a estrutura de pastas do monorepo (`ia/`, `backend/`, `frontend/`,
-   `docker/` etc.) e iniciar o versionamento.
+1. ~~Decidir com o usuário: repositório GitHub público ou privado, e o nome do
+   repositório~~ — feito, ver Sessão 6 abaixo.
+2. ~~Criar a estrutura de pastas do monorepo~~ — feito, ver Sessão 6.
 3. Instalar o toolchain do Rust (`rustup`) — decidir se local ou só em
    container.
+
+---
+
+## 🔁 Sessão 6 (11/08/2026, mesmo dia — sessão Claude Code): Fase 1 concluída — repositório GitHub criado
+
+**O que aconteceu:**
+1. Usuário decidiu: repositório **público**, nome **`basketball-scoreboard`**.
+2. `gh` (GitHub CLI) não estava instalado — usuário instalou via `pacman` e
+   autenticou com `gh auth login` (conta `dudu74186`).
+3. Git inicializado dentro de `Projeto placar automatico de Basquete/`
+   (branch `main`). Identidade de commit configurada localmente (não global):
+   nome "Eduardo Vitor", e-mail noreply do GitHub — escolha do usuário para
+   não expor o e-mail pessoal num repo público.
+4. Descoberta importante: a pasta `runs/` na raiz de `Documentos/Python/`
+   (fora do projeto) tinha **7,4GB** de frames de inferência acumulados —
+   provavelmente de execuções do `main.py` rodado a partir do diretório
+   errado. Não foi apagada (ação destrutiva, só sob pedido explícito), apenas
+   excluída do versionamento.
+5. Criado `.gitignore` cobrindo mídia (`*.mp4`, `*.pt`), `runs/`,
+   `__pycache__/`, `node_modules/`, `/target/`, `.obsidian/`, segredos.
+6. Criada a estrutura do monorepo: `ia/`, `backend/`, `frontend/`, `db/`,
+   `docker/`.
+7. **`main.py` movido para `ia/main.py`** (`mv`, conteúdo não alterado) —
+   usuário deu autorização explícita para esta ação específica, conforme
+   [[autorizacoes]] (regra de não mexer em `.py` sem pedido explícito a cada
+   vez).
+8. Criado `README.md` inicial na raiz do repo.
+9. Commit inicial feito e repositório publicado:
+   **https://github.com/dudu74186/basketball-scoreboard**
+
+**Status:** Fase 1 de [[linha_do_tempo]] concluída (falta só decidir licença
+e, mais adiante, estratégia de branches).
+
+**Próximos Passos na Retomada:**
+1. Fase 2: escrever `Dockerfile` para o serviço de IA (`ia/main.py`),
+   isolando dependências (ultralytics, opencv, CUDA) sem depender do Conda
+   local. Validar acesso à GPU (GTX 1650) via NVIDIA Container Toolkit.
+2. Instalar o toolchain do Rust (`rustup`) — decidir se local ou só em
+   container (vai ser necessário na Fase 4).
+3. Considerar limpar a pasta `runs/` de 7,4GB na raiz de `Documentos/Python/`
+   (fora do repo) — só com pedido explícito do usuário.
