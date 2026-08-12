@@ -24,6 +24,26 @@ Comunicação entre frontend e backend é via API (sem renderização server-sid
 Todos os serviços rodam containerizados via Docker Compose, garantindo paridade
 entre ambientes Linux e Windows.
 
+## Estrutura de pastas
+
+```
+.
+├── docs/           # Documentação e planejamento do projeto (vault Obsidian)
+├── GEMINI/         # Contexto/memória do assistente de IA (não editar manualmente)
+├── ia/             # Serviço de visão computacional (Python + YOLO)
+│   ├── main.py
+│   ├── models/     # Pesos de modelo (ex.: yolo11n.pt) — não versionado
+│   ├── samples/    # Vídeos de teste locais — não versionado
+│   └── outputs/    # Resultados de inferência (runs/, vídeos gerados) — não versionado
+├── backend/        # API em Rust (ainda vazio — Fase 4)
+├── frontend/       # Web em TypeScript + React (ainda vazio — Fase 5)
+├── db/             # Schema e migrations do PostgreSQL (ainda vazio — Fase 3)
+└── docker/         # Dockerfiles e docker-compose.yml (ainda vazio — Fase 2/6)
+```
+
+Arquivos pesados (vídeos, pesos de modelo, saídas de inferência) ficam fora do
+Git — veja `.gitignore`.
+
 ## Status
 
 Projeto em desenvolvimento inicial. Consulte o histórico de decisões, fases e

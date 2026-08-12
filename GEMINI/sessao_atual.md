@@ -172,3 +172,53 @@ e, mais adiante, estratégia de branches).
    container (vai ser necessário na Fase 4).
 3. Considerar limpar a pasta `runs/` de 7,4GB na raiz de `Documentos/Python/`
    (fora do repo) — só com pedido explícito do usuário.
+
+---
+
+## 🔁 Sessão 7 (11/08/2026, mesmo dia — sessão Claude Code): Reorganização geral de pastas
+
+**O que aconteceu:** usuário pediu para organizar toda a estrutura de pastas
+do projeto seguindo boas práticas, com front e back bem separados.
+
+1. Usuário autorizou explicitamente mover os `.md`/canvas de planejamento
+   (fora da `GEMINI/`) para uma nova pasta `docs/` — conteúdo não alterado,
+   só localização (`git mv` detectado como rename puro).
+   - `docs/Ferramentas.md`, `docs/Regras IA.md`,
+     `docs/Placar automático (IA).md`, `docs/Fluxograma Infraestrutura.canvas`.
+2. Artefatos locais não versionados (mídia, pesos de modelo, saídas de
+   inferência) foram organizados dentro de `ia/` em subpastas dedicadas — só
+   `mv` de arquivos já cobertos pelo `.gitignore`, sem necessidade de
+   autorização especial:
+   - `ia/models/yolo11n.pt`
+   - `ia/samples/teste.mp4`
+   - `ia/outputs/output.mp4` e `ia/outputs/runs/` (antiga `runs/` da raiz do
+     projeto, 53MB de frames de inferência antigos)
+3. `README.md` atualizado com a árvore de pastas completa e explicação de
+   cada diretório.
+4. `GEMINI/` não foi movida nem renomeada (permanece na raiz, conforme regra
+   de ouro em [[autorizacoes]] — é a própria pasta citada pela regra).
+
+**Estrutura final da raiz do projeto:**
+```
+.
+├── docs/       (documentação/planejamento — vault Obsidian)
+├── GEMINI/     (memória do assistente de IA)
+├── ia/         (visão computacional — Python, com models/samples/outputs locais)
+├── backend/    (API Rust — vazio, Fase 4)
+├── frontend/   (Web TS+React — vazio, Fase 5)
+├── db/         (PostgreSQL — vazio, Fase 3)
+├── docker/     (Dockerfiles/compose — vazio, Fase 2/6)
+├── .gitignore
+└── README.md
+```
+
+**Nota:** a pasta `runs/` de 7,4GB na raiz de `Documentos/Python/` (fora
+deste repositório) continua intocada — não faz parte desta reorganização,
+só seria removida com pedido explícito do usuário.
+
+**Status:** estrutura de pastas organizada e commitada. Front (`frontend/`) e
+back (`backend/`) já estavam desacoplados desde a Fase 1; esta sessão limpou
+a raiz e organizou os artefatos locais do serviço de IA.
+
+**Próximos Passos na Retomada:** os mesmos da Sessão 6 (Fase 2 — Dockerfile
+do serviço de IA; instalar `rustup`).
