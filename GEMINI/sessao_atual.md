@@ -222,3 +222,61 @@ a raiz e organizou os artefatos locais do serviço de IA.
 
 **Próximos Passos na Retomada:** os mesmos da Sessão 6 (Fase 2 — Dockerfile
 do serviço de IA; instalar `rustup`).
+
+---
+
+## 🔁 Sessão 8 (11/08/2026, mesmo dia — sessão Claude Code): Fase 2 concluída — serviço de IA containerizado com GPU
+
+**O que aconteceu:**
+1. Usuário instalou `nvidia-container-toolkit` e configurou o runtime
+   (`nvidia-ctk runtime configure --runtime=docker` + restart do Docker).
+   Validado com `docker run --gpus all nvidia/cuda:... nvidia-smi` — GTX 1650
+   reconhecida dentro do container.
+2. Usuário autorizou duas alterações pontuais em `ia/main.py`:
+   - Tornar `SHOW_VIDEO` (janela do OpenCV) controlável por variável de
+     ambiente, `False` por padrão em container (sem display).
+   - Parametrizar também `MODEL_PATH`, `VIDEO_SOURCE` e `OUTPUT_DIR` como
+     variáveis de ambiente (documentadas em `ia/.env.example`), mantendo os
+     valores antigos como padrão — decisão tomada para deixar o script
+     portável entre execução local, Docker e futuramente Windows, sem
+     precisar editar código de novo mais adiante.
+3. Criados `ia/requirements.txt`, `ia/Dockerfile` (base
+   `pytorch/pytorch:2.4.1-cuda12.1-cudnn9-runtime`) e `ia/.dockerignore`.
+4. **Build testado e funcionando** (`docker build -t basketball-ia:dev .`).
+   Ajuste feito no meio do caminho: `opencv-python-headless` foi removido do
+   `requirements.txt` porque o `ultralytics` já traz `opencv-python`
+   (com GUI) como dependência transitiva e instalava os dois, um sobrepondo
+   o outro — sem efeito prático negativo, mas redundante.
+5. **Execução testada com GPU real** via `docker run --gpus all` +
+   volumes para `models/`, `samples/`, `outputs/`. Inferência rodou a
+   ~6,7ms/frame na GTX 1650 sobre `teste.mp4` (605 frames).
+6. **Dois bugs reais encontrados e corrigidos durante o teste** (não eram
+   esperados, surgiram ao validar de ponta a ponta):
+   - O `ultralytics` (versão 8.4.118), ao receber um `project` relativo,
+     prefixa com um `runs_dir/task` interno próprio, gerando um caminho
+     aninhado errado (`.../runs/detect/outputs/runs/detect/predict`) que
+     ficava **fora** do volume montado — resultado se perdia ao encerrar o
+     container (`--rm`). Corrigido resolvendo `OUTPUT_DIR` para caminho
+     absoluto com `os.path.abspath()` antes de passar ao YOLO. Esse
+     comportamento também afetaria execução local (não é bug exclusivo de
+     Docker).
+   - O container roda como `root` por padrão, então os arquivos de saída
+     ficavam com dono `root` no host (usuário não conseguia apagar sem
+     `sudo`). Corrigido documentando `--user "$(id -u):$(id -g)"` no
+     comando de execução recomendado (README), sem precisar mudar a imagem.
+7. `README.md` atualizado com instruções completas de execução via Docker
+   (comando final, com `--gpus`, `--user`, volumes e variáveis de ambiente)
+   e também localmente sem Docker.
+
+**Status:** Fase 2 de [[linha_do_tempo]] concluída e validada
+(build + execução + GPU + persistência de resultado, tudo testado).
+
+**Próximos Passos na Retomada:**
+1. Fase 3: modelar o banco de dados PostgreSQL (entidades: Partida, Time,
+   Jogador, Evento, Súmula) e subir como serviço Docker próprio com volume
+   persistente.
+2. Instalar o toolchain do Rust (`rustup`) — necessário para a Fase 4
+   (backend/API).
+3. Commitar os arquivos desta sessão (`ia/Dockerfile`,
+   `ia/requirements.txt`, `ia/.dockerignore`, `ia/.env.example`,
+   `ia/main.py` atualizado, `README.md` atualizado) e dar push.

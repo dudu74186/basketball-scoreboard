@@ -51,16 +51,48 @@ pendências no diário de bordo do projeto.
 
 ## Como rodar (por enquanto)
 
-Só o serviço de IA existe até o momento:
+Só o serviço de IA existe até o momento. Duas formas de rodar:
+
+### Via Docker (recomendado)
+
+Pré-requisitos: Docker + [NVIDIA Container Toolkit](https://github.com/NVIDIA/nvidia-container-toolkit)
+(para aceleração por GPU dentro do container).
+
+```bash
+cd ia/
+docker build -t basketball-ia:dev .
+
+docker run --rm --gpus all \
+  --user "$(id -u):$(id -g)" \
+  -v "$(pwd)/models:/app/models:ro" \
+  -v "$(pwd)/samples:/app/samples:ro" \
+  -v "$(pwd)/outputs:/app/outputs" \
+  basketball-ia:dev
+```
+
+- `--gpus all`: dá acesso à GPU NVIDIA dentro do container.
+- `--user "$(id -u):$(id -g)"`: evita que os arquivos gerados (vídeos
+  anotados) fiquem com dono `root` no seu disco.
+- Os três `-v`: montam modelo, vídeo de entrada e pasta de saída como
+  volumes — nada disso vai para dentro da imagem (ver `ia/.dockerignore`).
+- Variáveis de ambiente disponíveis (ver `ia/.env.example`): `MODEL_PATH`,
+  `VIDEO_SOURCE`, `SHOW_VIDEO`, `OUTPUT_DIR`.
+
+Esse é o caminho pensado para funcionar igual em Linux e Windows (Fase 0),
+e será substituído por um serviço orquestrado via `docker-compose.yml` na
+Fase 6.
+
+### Localmente, sem Docker
 
 ```bash
 cd ia/
 python main.py
 ```
 
-Requer um ambiente Python com `ultralytics` e `opencv-python` instalados
-(recomenda-se Conda; ver ambiente `placar_basquete`, Python 3.10, com PyTorch +
-CUDA para aceleração por GPU).
+Requer um ambiente Python com as dependências de `ia/requirements.txt`
+instaladas (recomenda-se Conda; ver ambiente `placar_basquete`, Python 3.10,
+com PyTorch + CUDA para aceleração por GPU). Nesse modo, `SHOW_VIDEO` é
+`true` por padrão (abre a janela do OpenCV).
 
 ## Licença
 

@@ -72,12 +72,36 @@ Fase 10 → Testes de campo real + refinamento do modelo + documentação final
   para manter o e-mail pessoal fora do histórico público.
 
 ### Fase 2 — Containerizar o serviço de IA existente
-- Escrever um `Dockerfile` para o `main.py`/YOLO atual, isolando dependências
-  (ultralytics, opencv, CUDA) sem depender do Conda local.
-- Validar que a GPU (GTX 1650) é acessível dentro do container (NVIDIA Container
-  Toolkit).
-- Esse serviço passa a ser "o microsserviço de visão computacional" dentro da futura
-  arquitetura.
+- ✅ **Concluída em 11/08/2026.** `nvidia-container-toolkit` instalado
+  (`sudo pacman -S nvidia-container-toolkit` + `nvidia-ctk runtime configure
+  --runtime=docker` + restart do serviço) — runtime `nvidia` confirmado em
+  `docker info` e GPU validada dentro de um container (`nvidia-smi` via
+  `docker run --gpus all`).
+- ✅ `ia/Dockerfile` criado: base `pytorch/pytorch:2.4.1-cuda12.1-cudnn9-runtime`
+  (já vem com PyTorch+CUDA, evita reinstalar torch CPU-only por cima),
+  `ffmpeg`/`libgl1`/`libglib2.0-0` via apt para decodificação de vídeo,
+  dependências Python via `ia/requirements.txt` (só `ultralytics`; não
+  precisa de `opencv-python-headless` separado, o próprio `ultralytics` já
+  traz `opencv-python`).
+- ✅ `ia/.dockerignore` criado (deixa `models/`, `samples/`, `outputs/` fora
+  da imagem — entram via volume em tempo de execução).
+- ✅ `ia/main.py` alterado (autorização explícita do usuário) para ler
+  `MODEL_PATH`, `VIDEO_SOURCE`, `SHOW_VIDEO`, `OUTPUT_DIR` como variáveis de
+  ambiente (documentadas em `ia/.env.example`), com os valores antigos como
+  padrão — script portável entre execução local, container Docker e (mais
+  adiante) Windows.
+- ✅ Build e execução testados de ponta a ponta com GPU real (inferência a
+  ~6,7ms/frame na GTX 1650) e resultado persistido corretamente no host via
+  volume montado.
+- ✅ Esse serviço já funciona como "o microsserviço de visão computacional"
+  standalone (roda isolado, sem depender do Conda local).
+- Bugs encontrados e corrigidos durante o teste (detalhes em
+  [[sessao_atual]]): (1) `ultralytics` prefixa `project` relativo com um
+  `runs_dir/task` interno, gerando pasta aninhada errada — corrigido
+  resolvendo `OUTPUT_DIR` para caminho absoluto (`os.path.abspath`) antes de
+  passar ao YOLO; (2) container rodando como `root` gerava arquivos de saída
+  com dono `root` no host — corrigido documentando `--user "$(id -u):$(id
+  -g)"` no comando de execução (`docker run`), ver README.
 
 ### Fase 3 — Banco de dados dedicado
 - Escolher o SGBD (opções apresentadas ao usuário no chat).
@@ -147,5 +171,9 @@ Detalhes de cada decisão em [[sugestoes]].
    feito. Repositório público criado:
    https://github.com/dudu74186/basketball-scoreboard (Fase 1 concluída,
    exceto licença e estratégia de branches).
-3. Instalar toolchain do Rust (`rustup`) — a confirmar se localmente ou só dentro do
-   container Docker (próximo passo natural: Fase 2, containerizar o serviço de IA).
+3. ~~Containerizar o serviço de IA (Fase 2)~~ — feito e validado com GPU real
+   em 11/08/2026.
+4. Instalar toolchain do Rust (`rustup`) — a confirmar se localmente ou só
+   dentro do container Docker (necessário para a Fase 4, backend/API).
+5. Próximo passo natural: Fase 3 (banco de dados PostgreSQL dedicado,
+   modelagem de Partida/Time/Jogador/Evento/Súmula).

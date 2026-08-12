@@ -1,0 +1,9 @@
+# Artefatos locais grandes: entram via volume montado em tempo de execução,
+# não fazem parte da imagem.
+models/
+samples/
+outputs/
+
+__pycache__/
+*.pyc
+.env
