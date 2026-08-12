@@ -1,0 +1,17 @@
+{
+	"nodes":[
+		{"id":"8513ffddb44ecb61","type":"text","text":"computador","x":200,"y":40,"width":140,"height":61},
+		{"id":"6c22e7efe4b56440","type":"text","text":"Banco de dados","x":680,"y":41,"width":250,"height":60},
+		{"id":"808106de440337ed","type":"text","text":"Processamento","x":380,"y":-180,"width":250,"height":60},
+		{"id":"9e0a13e00db499db","type":"text","text":"Retorna Sumula","x":380,"y":240,"width":250,"height":60},
+		{"id":"b2d557806d165823","type":"text","text":"Celular","x":-20,"y":40,"width":102,"height":60}
+	],
+	"edges":[
+		{"id":"d6b175ef14972671","fromNode":"b2d557806d165823","fromSide":"right","toNode":"8513ffddb44ecb61","toSide":"left"},
+		{"id":"a1e5e3795f5dd6ec","fromNode":"8513ffddb44ecb61","fromSide":"right","toNode":"808106de440337ed","toSide":"left"},
+		{"id":"82116b30ed3e8c75","fromNode":"808106de440337ed","fromSide":"right","toNode":"6c22e7efe4b56440","toSide":"left"},
+		{"id":"ecbdf0234d460068","fromNode":"6c22e7efe4b56440","fromSide":"left","toNode":"9e0a13e00db499db","toSide":"right"},
+		{"id":"56289f2937192c40","fromNode":"9e0a13e00db499db","fromSide":"left","toNode":"8513ffddb44ecb61","toSide":"right"},
+		{"id":"932020d1ad9355e9","fromNode":"8513ffddb44ecb61","fromSide":"left","toNode":"b2d557806d165823","toSide":"right"}
+	]
+}

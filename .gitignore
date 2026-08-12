@@ -1,0 +1,38 @@
+# --- Mídia e artefatos pesados (não versionar) ---
+*.mp4
+*.avi
+*.mov
+*.pt
+*.onnx
+runs/
+
+# --- Python ---
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+
+# --- Node / TypeScript (frontend, Fase 5) ---
+node_modules/
+dist/
+build/
+.env
+.env.local
+
+# --- Rust (backend, Fase 4) ---
+/target/
+Cargo.lock
+
+# --- Editor / SO ---
+.obsidian/
+.directory
+.vscode/
+.idea/
+*.swp
+
+# --- Segredos (nunca versionar) ---
+*.pem
+*.key
+secrets/
