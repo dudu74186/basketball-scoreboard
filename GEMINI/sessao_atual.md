@@ -4,6 +4,59 @@ Este arquivo documenta o progresso da nossa colaboração, incluindo aulas didá
 
 ---
 
+## 📌 ESTADO ATUAL (ler isto primeiro ao retomar) — atualizado 11/08/2026
+
+**Onde paramos:** Fases 0, 1 e 2 de [[linha_do_tempo]] concluídas e
+validadas. Repositório público no ar:
+**https://github.com/dudu74186/basketball-scoreboard** (branch `main`,
+working tree limpo, tudo commitado e com push feito — 4 commits).
+
+**O que já funciona de ponta a ponta:** o serviço de IA (`ia/`) builda e
+roda em Docker com aceleração de GPU real (GTX 1650), lê modelo/vídeo/saída
+via variáveis de ambiente, e persiste resultado corretamente no host através
+de volumes. Comando de execução completo está no `README.md` da raiz.
+
+**Estrutura de pastas atual:**
+```
+.
+├── docs/        (planejamento — Ferramentas.md, Regras IA.md, Placar automático, canvas)
+├── GEMINI/      (esta pasta — memória do assistente)
+├── ia/          (Python + YOLO — main.py, Dockerfile, requirements.txt, .env.example,
+│                 models/, samples/, outputs/ — os 3 últimos locais, fora do Git)
+├── backend/     (Rust — só .gitkeep, Fase 4 ainda não começou)
+├── frontend/    (TS+React — só .gitkeep, Fase 5 ainda não começou)
+├── db/          (PostgreSQL — só .gitkeep, Fase 3 ainda não começou)
+├── docker/      (compose — só .gitkeep, Fase 6 ainda não começou)
+├── .gitignore, README.md
+```
+
+**Pendências reais em aberto (nenhuma bloqueia o próximo passo):**
+1. Limpeza cosmética: `ia/outputs/runs/detect/predict-2` e `predict-3` são
+   resíduos de teste com dono `root` (o usuário ainda não rodou o
+   `sudo rm -rf` que ficou pendente na Sessão 8). Não afeta o Git nem o
+   funcionamento — só sujeira local.
+2. A pasta `runs/` de **7,4GB** na raiz de `Documentos/Python/` (fora deste
+   repositório) continua sem limpar — só mexer com pedido explícito do
+   usuário.
+3. Licença do repositório: ainda não escolhida.
+4. Estratégia de branches (proteção de `main`): ainda não configurada, todo
+   commit até agora foi direto em `main`.
+5. `rustup`/toolchain do Rust: ainda não instalado (vai ser necessário só na
+   Fase 4, backend).
+
+**Próximo passo combinado com o usuário:** Fase 3 — modelar o banco
+PostgreSQL (entidades: Partida, Time, Jogador, Evento, Súmula) e subir como
+serviço Docker próprio com volume persistente. **Ainda não iniciada** — o
+usuário pediu para pausar aqui e só retomar quando chamar de novo.
+
+**Regras de operação que continuam valendo** (detalhes em [[autorizacoes]] e
+[[funcoes]]): só editar diretamente dentro de `GEMINI/`; nunca editar `.py`
+ou `.md`/canvas fora da `GEMINI/` sem autorização explícita *a cada pedido*;
+nunca escolher/aplicar linguagem ou ferramenta sozinho, só sugerir; postura
+de mentor didático (usuário é programador júnior).
+
+---
+
 ## 🎓 Aulas Didáticas
 
 ### Aula 1: O Pipeline de Visão Computacional
@@ -277,6 +330,10 @@ do serviço de IA; instalar `rustup`).
    persistente.
 2. Instalar o toolchain do Rust (`rustup`) — necessário para a Fase 4
    (backend/API).
-3. Commitar os arquivos desta sessão (`ia/Dockerfile`,
-   `ia/requirements.txt`, `ia/.dockerignore`, `ia/.env.example`,
-   `ia/main.py` atualizado, `README.md` atualizado) e dar push.
+3. ~~Commitar os arquivos desta sessão~~ — feito, commit `526f6d0`, push
+   confirmado.
+
+**Nota de encerramento (mesma sessão):** usuário pediu para pausar aqui e
+só retomar a Fase 3 quando chamar de novo. Ver seção "📌 ESTADO ATUAL" no
+topo deste arquivo para o resumo rápido de retomada — foi escrita
+especificamente para isso.
