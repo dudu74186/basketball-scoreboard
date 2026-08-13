@@ -1,0 +1,7 @@
+# Sem isto, o Docker enviaria >1 GB de artefatos de build como contexto —
+# e eles seriam inúteis dentro da imagem, que compila do zero.
+target/
+
+# Segredos e configuração local nunca entram na imagem: as variáveis são
+# injetadas em tempo de execução pelo docker-compose.
+.env

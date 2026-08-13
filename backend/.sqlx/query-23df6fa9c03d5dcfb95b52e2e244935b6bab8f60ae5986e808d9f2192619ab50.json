@@ -1,0 +1,76 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id, nome, numero_camisa, time_id, criado_em\n           FROM jogadores\n          WHERE $1::int IS NULL OR time_id = $1\n          ORDER BY numero_camisa NULLS LAST, nome",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "jogadores",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "nome",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "jogadores",
+            "name": "nome"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "numero_camisa",
+        "type_info": "Int2",
+        "origin": {
+          "Table": {
+            "table": "jogadores",
+            "name": "numero_camisa"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "time_id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "jogadores",
+            "name": "time_id"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "criado_em",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "jogadores",
+            "name": "criado_em"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "23df6fa9c03d5dcfb95b52e2e244935b6bab8f60ae5986e808d9f2192619ab50"
+}

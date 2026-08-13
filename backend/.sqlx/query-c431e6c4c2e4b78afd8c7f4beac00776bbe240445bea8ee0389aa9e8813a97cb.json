@@ -1,0 +1,52 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO times (nome) VALUES ($1) RETURNING id, nome, criado_em",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "times",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "nome",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "times",
+            "name": "nome"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "criado_em",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "times",
+            "name": "criado_em"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Varchar"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "c431e6c4c2e4b78afd8c7f4beac00776bbe240445bea8ee0389aa9e8813a97cb"
+}

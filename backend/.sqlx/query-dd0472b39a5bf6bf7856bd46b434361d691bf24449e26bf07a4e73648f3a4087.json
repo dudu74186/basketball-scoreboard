@@ -1,0 +1,98 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id, modalidade, time_casa_id, time_visitante_id, data_hora, status, criado_em\n           FROM partidas\n          ORDER BY data_hora DESC",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "partidas",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "modalidade",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "partidas",
+            "name": "modalidade"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "time_casa_id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "partidas",
+            "name": "time_casa_id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "time_visitante_id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "partidas",
+            "name": "time_visitante_id"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "data_hora",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "partidas",
+            "name": "data_hora"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "status",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "partidas",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "criado_em",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "partidas",
+            "name": "criado_em"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "dd0472b39a5bf6bf7856bd46b434361d691bf24449e26bf07a4e73648f3a4087"
+}

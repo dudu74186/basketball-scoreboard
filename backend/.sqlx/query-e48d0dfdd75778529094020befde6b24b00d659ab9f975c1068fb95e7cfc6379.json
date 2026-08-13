@@ -1,0 +1,100 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id, modalidade, time_casa_id, time_visitante_id, data_hora, status, criado_em\n           FROM partidas WHERE id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "partidas",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "modalidade",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "partidas",
+            "name": "modalidade"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "time_casa_id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "partidas",
+            "name": "time_casa_id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "time_visitante_id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "partidas",
+            "name": "time_visitante_id"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "data_hora",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "partidas",
+            "name": "data_hora"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "status",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "partidas",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "criado_em",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "partidas",
+            "name": "criado_em"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "e48d0dfdd75778529094020befde6b24b00d659ab9f975c1068fb95e7cfc6379"
+}

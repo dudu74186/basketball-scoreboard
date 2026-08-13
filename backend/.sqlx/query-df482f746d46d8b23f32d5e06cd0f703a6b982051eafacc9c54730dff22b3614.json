@@ -1,0 +1,88 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT jogador_id  AS \"jogador_id!\",\n                  jogador_nome AS \"jogador_nome!\",\n                  time_id      AS \"time_id!\",\n                  time_nome    AS \"time_nome!\",\n                  pontos_totais AS \"pontos_totais!\",\n                  faltas        AS \"faltas!\"\n             FROM vw_sumula\n            WHERE partida_id = $1\n            ORDER BY pontos_totais DESC, jogador_nome",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "jogador_id!",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "vw_sumula",
+            "name": "jogador_id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "jogador_nome!",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "vw_sumula",
+            "name": "jogador_nome"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "time_id!",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "vw_sumula",
+            "name": "time_id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "time_nome!",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "vw_sumula",
+            "name": "time_nome"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "pontos_totais!",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "vw_sumula",
+            "name": "pontos_totais"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "faltas!",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "vw_sumula",
+            "name": "faltas"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "df482f746d46d8b23f32d5e06cd0f703a6b982051eafacc9c54730dff22b3614"
+}

@@ -27,5 +27,24 @@ services:
       timeout: 5s
       retries: 5
 
+  backend:
+    build:
+      context: ./backend
+    container_name: basketball-backend
+    restart: unless-stopped
+    depends_on:
+      # Espera o banco ficar realmente pronto (healthy), não só "iniciado" —
+      # senão a API sobe antes e falha ao abrir o pool de conexões.
+      db:
+        condition: service_healthy
+    environment:
+      # O host aqui é `db`, o nome do serviço: dentro da rede do compose os
+      # containers se enxergam pelo nome, sem passar pela porta publicada.
+      DATABASE_URL: postgres://${POSTGRES_USER:-basquete}:${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}@db:5432/${POSTGRES_DB:-placar_basquete}
+      BIND_ADDR: 0.0.0.0:3000
+      RUST_LOG: ${RUST_LOG:-info}
+    ports:
+      - "3000:3000"
+
 volumes:
   db_data:
