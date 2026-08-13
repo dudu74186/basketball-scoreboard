@@ -8,9 +8,9 @@ Este arquivo documenta o progresso da nossa colaboração, incluindo aulas didá
 
 **Onde paramos:** Fases 0, 1, 2 e 3 de [[linha_do_tempo]] concluídas e
 validadas. Repositório público no ar:
-**https://github.com/dudu74186/basketball-scoreboard** (branch `main`).
-Ver "Próximos Passos" da Sessão 9 abaixo para o que falta commitar/pushar
-desta sessão especificamente.
+**https://github.com/dudu74186/basketball-scoreboard** (branch `main`,
+working tree limpo, tudo commitado e com push feito — 6 commits, último
+`69fd400`).
 
 **O que já funciona de ponta a ponta:**
 - Serviço de IA (`ia/`): builda e roda em Docker com GPU real (GTX 1650),
@@ -403,7 +403,7 @@ migrations + compose + testes de integridade, tudo testado de verdade, não
 só escrito).
 
 **Próximos Passos na Retomada:**
-1. Commitar e dar push nos arquivos desta sessão (`db/migrations/*.sql`,
+1. ~~Commitar e dar push nos arquivos desta sessão~~ — feito, commit `69fd400`, push confirmado.
    `db/README.md`, `docker-compose.yml`, `.env.example`, `README.md`
    atualizado) — **verificar se isso já foi feito** antes de prosseguir,
    pode ter acontecido ainda nesta mesma sessão logo em seguida.
