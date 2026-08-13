@@ -4,17 +4,24 @@ Este arquivo documenta o progresso da nossa colaboração, incluindo aulas didá
 
 ---
 
-## 📌 ESTADO ATUAL (ler isto primeiro ao retomar) — atualizado 11/08/2026
+## 📌 ESTADO ATUAL (ler isto primeiro ao retomar) — atualizado 12/08/2026
 
-**Onde paramos:** Fases 0, 1 e 2 de [[linha_do_tempo]] concluídas e
+**Onde paramos:** Fases 0, 1, 2 e 3 de [[linha_do_tempo]] concluídas e
 validadas. Repositório público no ar:
-**https://github.com/dudu74186/basketball-scoreboard** (branch `main`,
-working tree limpo, tudo commitado e com push feito — 4 commits).
+**https://github.com/dudu74186/basketball-scoreboard** (branch `main`).
+Ver "Próximos Passos" da Sessão 9 abaixo para o que falta commitar/pushar
+desta sessão especificamente.
 
-**O que já funciona de ponta a ponta:** o serviço de IA (`ia/`) builda e
-roda em Docker com aceleração de GPU real (GTX 1650), lê modelo/vídeo/saída
-via variáveis de ambiente, e persiste resultado corretamente no host através
-de volumes. Comando de execução completo está no `README.md` da raiz.
+**O que já funciona de ponta a ponta:**
+- Serviço de IA (`ia/`): builda e roda em Docker com GPU real (GTX 1650),
+  lê modelo/vídeo/saída via variáveis de ambiente, persiste resultado no
+  host via volumes.
+- Banco de dados (`db/` + `docker-compose.yml`): PostgreSQL 17 sobe via
+  `docker compose up -d db`, schema completo aplicado (times, jogadores,
+  partidas, eventos, view `vw_sumula`), testado com dados de exemplo e com
+  as CHECK constraints rejeitando dado inválido.
+
+Comandos de execução completos estão no `README.md` da raiz.
 
 **Estrutura de pastas atual:**
 ```
@@ -23,31 +30,36 @@ de volumes. Comando de execução completo está no `README.md` da raiz.
 ├── GEMINI/      (esta pasta — memória do assistente)
 ├── ia/          (Python + YOLO — main.py, Dockerfile, requirements.txt, .env.example,
 │                 models/, samples/, outputs/ — os 3 últimos locais, fora do Git)
+├── db/          (PostgreSQL — migrations/*.sql numeradas + README.md)
 ├── backend/     (Rust — só .gitkeep, Fase 4 ainda não começou)
 ├── frontend/    (TS+React — só .gitkeep, Fase 5 ainda não começou)
-├── db/          (PostgreSQL — só .gitkeep, Fase 3 ainda não começou)
-├── docker/      (compose — só .gitkeep, Fase 6 ainda não começou)
+├── docker/      (reservado, ainda vazio)
+├── docker-compose.yml  (orquestra só o serviço `db` por enquanto)
+├── .env.example (POSTGRES_USER/PASSWORD/DB) — .env real já existe local, gitignored
 ├── .gitignore, README.md
 ```
 
 **Pendências reais em aberto (nenhuma bloqueia o próximo passo):**
 1. Limpeza cosmética: `ia/outputs/runs/detect/predict-2` e `predict-3` são
-   resíduos de teste com dono `root` (o usuário ainda não rodou o
-   `sudo rm -rf` que ficou pendente na Sessão 8). Não afeta o Git nem o
-   funcionamento — só sujeira local.
+   resíduos de teste com dono `root` — usuário ainda não rodou o
+   `sudo rm -rf` (pendente desde a Sessão 8). Não afeta nada, só sujeira
+   local.
 2. A pasta `runs/` de **7,4GB** na raiz de `Documentos/Python/` (fora deste
-   repositório) continua sem limpar — só mexer com pedido explícito do
-   usuário.
+   repositório) continua sem limpar — só mexer com pedido explícito.
 3. Licença do repositório: ainda não escolhida.
 4. Estratégia de branches (proteção de `main`): ainda não configurada, todo
    commit até agora foi direto em `main`.
-5. `rustup`/toolchain do Rust: ainda não instalado (vai ser necessário só na
-   Fase 4, backend).
+5. `rustup`/toolchain do Rust: ainda não instalado — vai ser necessário
+   assim que a Fase 4 (backend) começar.
+6. O container `basketball-db` pode estar rodando neste momento (subido
+   durante o teste da Fase 3, via `docker compose up -d db`) — verificar com
+   `docker ps` ao retomar; não há problema em deixar rodando ou parar com
+   `docker compose down`.
 
-**Próximo passo combinado com o usuário:** Fase 3 — modelar o banco
-PostgreSQL (entidades: Partida, Time, Jogador, Evento, Súmula) e subir como
-serviço Docker próprio com volume persistente. **Ainda não iniciada** — o
-usuário pediu para pausar aqui e só retomar quando chamar de novo.
+**Próximo passo natural:** Fase 4 — backend/API em Rust (`sqlx` para o
+PostgreSQL, `tonic`/gRPC para comunicar com o serviço de IA). **Ainda não
+iniciada** neste momento — ver ao final da Sessão 9 se o usuário seguiu
+direto para ela ou pausou por aqui.
 
 **Regras de operação que continuam valendo** (detalhes em [[autorizacoes]] e
 [[funcoes]]): só editar diretamente dentro de `GEMINI/`; nunca editar `.py`
@@ -337,3 +349,67 @@ do serviço de IA; instalar `rustup`).
 só retomar a Fase 3 quando chamar de novo. Ver seção "📌 ESTADO ATUAL" no
 topo deste arquivo para o resumo rápido de retomada — foi escrita
 especificamente para isso.
+
+---
+
+## 🔁 Sessão 9 (12/08/2026 — sessão Claude Code): Fase 3 concluída — banco PostgreSQL modelado e validado
+
+**O que aconteceu:** usuário retomou pedindo para continuar de onde parou.
+Estado foi conferido no disco (git log, resíduos `root`, `rustup`) e batia
+exatamente com o que estava anotado na Sessão 8 — nenhuma surpresa.
+
+1. Usuário decidiu a ferramenta de acesso a dados do backend Rust: **sqlx**
+   (SQL puro checado em compilação) em vez de sea-orm — decisão que estava
+   marcada como pendente em [[sugestoes]] desde a sessão de pivô de escopo.
+2. Schema modelado e escrito em `db/migrations/*.sql` (numeração
+   `0001`–`0005`, compatível com `sqlx-cli`):
+   - `times`, `jogadores` (com `UNIQUE(time_id, numero_camisa)`),
+     `partidas` (com `CHECK` impedindo time jogar contra si mesmo),
+     `eventos` (com `CHECK` amarrando `tipo` a `pontos` — ex.: `cesta_2`
+     só aceita `pontos=2`).
+   - `vw_sumula`: view, não tabela — decisão deliberada para a súmula
+     nunca ficar dessincronizada do que realmente está em `eventos`.
+   - Justificativas completas em `db/README.md` (novo).
+3. `docker-compose.yml` criado **na raiz do repositório** (primeira vez
+   que aparece — antes só existia a pasta `docker/` vazia). Contém por
+   enquanto só o serviço `db` (`postgres:17-alpine`, volume nomeado
+   `db_data`, healthcheck `pg_isready`). Decisão de colocar o compose na
+   raiz (não dentro de `docker/`) por ergonomia (`docker compose up`
+   funciona direto no clone do repo, sem precisar `cd`) — mudança de
+   plano em relação ao que a tabela do README dizia antes; `docker/` fica
+   reservado para configs de suporte à orquestração, não o compose em si.
+4. As migrations também foram montadas em `/docker-entrypoint-initdb.d`
+   como atalho de bootstrap (só roda na primeira inicialização do volume)
+   — deixado bem documentado em `db/README.md` que isso **não substitui**
+   `sqlx migrate run`, que será o mecanismo real a partir da Fase 4.
+5. `.env.example` criado na raiz; usuário copiou para `.env` (gitignored)
+   com senha de desenvolvimento gerada localmente.
+6. **Testado de ponta a ponta:**
+   - `docker compose up -d db` → container `basketball-db` saudável.
+   - As 5 migrations rodaram sem erro (confirmado nos logs do container).
+   - Inserção de dados de exemplo (2 times, 2 jogadores, 1 partida, 4
+     eventos) e conferência manual de `SELECT * FROM vw_sumula` — soma de
+     pontos bateu exatamente com o esperado (5 e 1 pontos).
+   - Duas tentativas de inserir dado inválido (`cesta_2` com 3 pontos;
+     time jogando contra si mesmo) foram **corretamente rejeitadas** pelas
+     `CHECK constraints` do banco.
+   - Dados de teste limpos com `TRUNCATE ... RESTART IDENTITY CASCADE`
+     depois da validação, deixando o schema pronto e vazio.
+7. `README.md` atualizado: tabela de arquitetura, árvore de pastas e nova
+   seção "Banco de dados" em "Como rodar".
+
+**Status:** Fase 3 de [[linha_do_tempo]] concluída e validada (schema +
+migrations + compose + testes de integridade, tudo testado de verdade, não
+só escrito).
+
+**Próximos Passos na Retomada:**
+1. Commitar e dar push nos arquivos desta sessão (`db/migrations/*.sql`,
+   `db/README.md`, `docker-compose.yml`, `.env.example`, `README.md`
+   atualizado) — **verificar se isso já foi feito** antes de prosseguir,
+   pode ter acontecido ainda nesta mesma sessão logo em seguida.
+2. Fase 4: backend/API em Rust. Precisa antes instalar `rustup` (decidir
+   com o usuário se local ou só em container). Depois: `cargo init` em
+   `backend/`, configurar `sqlx` apontando para o Postgres do
+   `docker-compose.yml`, e `tonic`/gRPC para comunicar com `ia/`.
+3. Lembrar de checar `docker ps` — o container `basketball-db` pode ter
+   ficado rodando desde o teste desta sessão.

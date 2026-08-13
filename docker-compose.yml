@@ -1,0 +1,31 @@
+# Orquestração dos serviços do projeto. Começa só com o banco (Fase 3);
+# os demais serviços (ia, backend, frontend) entram aqui conforme forem
+# ficando prontos, até a integração final da Fase 6.
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: basketball-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-basquete}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}
+      POSTGRES_DB: ${POSTGRES_DB:-placar_basquete}
+    ports:
+      - "5432:5432"
+    volumes:
+      # Dado do banco persiste aqui entre reinícios do container.
+      - db_data:/var/lib/postgresql/data
+      # Bootstrap de conveniência: só roda automaticamente na PRIMEIRA vez
+      # que o volume é criado (banco vazio). Não é o mecanismo real de
+      # migrations — a partir da Fase 4, o schema passa a ser aplicado (e
+      # versionado ao longo do tempo) via `sqlx migrate run` pelo backend
+      # Rust. Ver db/README.md.
+      - ./db/migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-basquete}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  db_data:

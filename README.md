@@ -16,8 +16,8 @@ CI/CD e segurança aplicada.
 | Visão computacional / IA | `ia/` | Python + YOLOv11 (Ultralytics) |
 | Backend / API | `backend/` | Rust (gRPC via `tonic`) |
 | Frontend Web | `frontend/` | TypeScript + React |
-| Banco de dados | `db/` | PostgreSQL (container Docker) |
-| Orquestração | `docker/` | Docker + Docker Compose |
+| Banco de dados | `db/` | PostgreSQL (container Docker, acesso via `sqlx` no backend) |
+| Orquestração | `docker-compose.yml` | Docker + Docker Compose |
 | App Android (futuro) | `mobile/` | Kotlin nativo |
 
 Comunicação entre frontend e backend é via API (sem renderização server-side).
@@ -37,8 +37,11 @@ entre ambientes Linux e Windows.
 │   └── outputs/    # Resultados de inferência (runs/, vídeos gerados) — não versionado
 ├── backend/        # API em Rust (ainda vazio — Fase 4)
 ├── frontend/       # Web em TypeScript + React (ainda vazio — Fase 5)
-├── db/             # Schema e migrations do PostgreSQL (ainda vazio — Fase 3)
-└── docker/         # Dockerfiles e docker-compose.yml (ainda vazio — Fase 2/6)
+├── db/             # Schema e migrations do PostgreSQL
+│   ├── migrations/ # Arquivos .sql numerados (compatíveis com sqlx-cli)
+│   └── README.md
+├── docker/         # (reservado para configs de orquestração — vazio por enquanto)
+└── docker-compose.yml  # Orquestração dos serviços (hoje só o banco)
 ```
 
 Arquivos pesados (vídeos, pesos de modelo, saídas de inferência) ficam fora do
@@ -51,7 +54,19 @@ pendências no diário de bordo do projeto.
 
 ## Como rodar (por enquanto)
 
-Só o serviço de IA existe até o momento. Duas formas de rodar:
+### Banco de dados
+
+```bash
+cp .env.example .env   # e troque a senha
+docker compose up -d db
+docker compose exec db psql -U basquete -d placar_basquete -c '\dt'
+```
+
+Schema e decisões de modelagem documentados em `db/README.md`.
+
+### Serviço de IA
+
+Duas formas de rodar:
 
 ### Via Docker (recomendado)
 

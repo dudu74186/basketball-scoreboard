@@ -104,11 +104,34 @@ Fase 10 → Testes de campo real + refinamento do modelo + documentação final
   -g)"` no comando de execução (`docker run`), ver README.
 
 ### Fase 3 — Banco de dados dedicado
-- Escolher o SGBD (opções apresentadas ao usuário no chat).
-- Modelar entidades mínimas: Partida, Jogador, Time, Evento (cesta/lance
-  livre/falta), Súmula.
-- Subir o banco como serviço Docker próprio, com volume persistente.
-- Ensinar migrations (ferramenta depende da linguagem do backend escolhida).
+- ✅ **Concluída em 12/08/2026.**
+- ✅ Ferramenta de acesso a dados/migrations decidida com o usuário:
+  **sqlx** (SQL puro checado em tempo de compilação, sem ORM completo —
+  escolhido por transparência pedagógica, alternativa `sea-orm` descartada
+  por enquanto).
+- ✅ Schema modelado em `db/migrations/` (numeração compatível com
+  `sqlx-cli`): `times`, `jogadores`, `partidas`, `eventos` (tabelas) +
+  `vw_sumula` (view — súmula é sempre calculada a partir de `eventos`, não
+  guardada solta, para não haver dessincronização de placar). Detalhes e
+  justificativas de design em `db/README.md`.
+- ✅ `docker-compose.yml` criado na raiz do repo (primeira vez que o compose
+  aparece — só o serviço `db` por enquanto; `ia`, `backend`, `frontend`
+  entram aqui conforme forem ficando prontos, até a Fase 6). Serviço
+  PostgreSQL 17 (`postgres:17-alpine`), volume nomeado `db_data`
+  persistente, healthcheck via `pg_isready`.
+- ✅ Bootstrap de conveniência: as migrations são montadas em
+  `/docker-entrypoint-initdb.d`, rodando automaticamente na primeira
+  inicialização do volume — **não é o mecanismo real de migrations**, só
+  um atalho para já ter o schema em ambiente de teste antes do backend
+  Rust existir. A partir da Fase 4, `sqlx migrate run` passa a ser o
+  jeito certo de aplicar/versionar mudanças de schema.
+- ✅ Testado de ponta a ponta: container subiu saudável, as 5 migrations
+  rodaram sem erro, inserção de dados de exemplo validou a `vw_sumula`
+  (soma de pontos bateu certo), e as duas `CHECK constraints` principais
+  (pontos consistentes com o tipo do evento; time não pode jogar contra si
+  mesmo) bloquearam dados inválidos como esperado.
+- `.env.example` criado na raiz (`POSTGRES_USER/PASSWORD/DB`); `.env` real
+  (gitignored) já criado localmente com senha de desenvolvimento.
 
 ### Fase 4 — Backend/API
 - Linguagem a escolher (opções no chat).
@@ -173,7 +196,10 @@ Detalhes de cada decisão em [[sugestoes]].
    exceto licença e estratégia de branches).
 3. ~~Containerizar o serviço de IA (Fase 2)~~ — feito e validado com GPU real
    em 11/08/2026.
-4. Instalar toolchain do Rust (`rustup`) — a confirmar se localmente ou só
+4. ~~Banco de dados PostgreSQL dedicado (Fase 3)~~ — feito e validado em
+   12/08/2026 (schema, migrations, `docker-compose.yml`, testes de
+   integridade).
+5. Instalar toolchain do Rust (`rustup`) — a confirmar se localmente ou só
    dentro do container Docker (necessário para a Fase 4, backend/API).
-5. Próximo passo natural: Fase 3 (banco de dados PostgreSQL dedicado,
-   modelagem de Partida/Time/Jogador/Evento/Súmula).
+6. Próximo passo natural: Fase 4 (backend/API em Rust, com `sqlx` para
+   acessar o PostgreSQL e `tonic`/gRPC para comunicar com o serviço de IA).
