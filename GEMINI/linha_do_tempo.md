@@ -134,11 +134,38 @@ Fase 10 → Testes de campo real + refinamento do modelo + documentação final
   (gitignored) já criado localmente com senha de desenvolvimento.
 
 ### Fase 4 — Backend/API
-- Linguagem a escolher (opções no chat).
-- API expõe endpoints para: receber eventos do serviço de IA, consultar súmula,
-  gerenciar partidas/jogadores.
-- Comunicação entre IA (Fase 2) e API: a definir (fila de mensagens, REST interno,
-  webhook) — bom tópico de arquitetura para estudar mais adiante.
+Dividida em 3 entregas incrementais. **Entrega 4a concluída em 12/08/2026.**
+
+**4a — Fundação (✅ concluída):**
+- `rustup` instalado via script oficial rustup.rs (escolha do usuário entre
+  3 opções), sem sudo, em `~/.cargo`. Rust 1.97.1. Linha
+  `. "$HOME/.cargo/env"` adicionada ao `~/.bashrc`.
+- Framework web escolhido pelo usuário: **actix-web** (a IA havia sugerido
+  axum pela sinergia com o tonic; usuário preferiu actix-web — decisão
+  respeitada, os dois integram com gRPC).
+- `cargo init` em `backend/` (crate `basketball-api`), com actix-web, sqlx
+  (postgres, macros, chrono), serde, dotenvy, env_logger, log.
+- `backend/src/main.rs`: pool de conexões `sqlx` + endpoint `GET /health`
+  que roda `SELECT 1` de verdade contra o Postgres (health check que testa
+  a dependência, não só devolve 200 vazio). Retorna 503 quando o banco está
+  fora — testado derrubando e religando o container.
+- `BIND_ADDR` configurável, com `127.0.0.1:3000` como padrão (API não fica
+  exposta na rede por acidente; em container vira `0.0.0.0`).
+- **Dois bugs corrigidos no `.gitignore`** durante esta entrega, ambos
+  herdados da Fase 1 (detalhes em [[sessao_atual]]): `/target/` estava
+  ancorado na raiz e não pegava `backend/target/` (1,2 GB que iriam para
+  o commit); e `Cargo.lock` estava sendo ignorado, quando a recomendação
+  oficial do Rust é versioná-lo para aplicações.
+
+**4b — API REST da súmula (pendente):**
+- Endpoints de `times`, `jogadores`, `partidas`, `eventos` e consulta da
+  súmula (lendo de `vw_sumula`).
+- Usar as macros do `sqlx` que validam SQL em tempo de compilação.
+
+**4c — Containerizar e integrar (pendente):**
+- `Dockerfile` multi-stage do backend + adicionar ao `docker-compose.yml`.
+- Comunicação IA ↔ API via gRPC (`tonic`), conforme decidido em
+  [[sugestoes]].
 
 ### Fase 5 — Frontend Web
 - Linguagem/framework a escolher (opções no chat).

@@ -14,7 +14,7 @@ CI/CD e segurança aplicada.
 | Camada | Diretório | Linguagem/Stack |
 |---|---|---|
 | Visão computacional / IA | `ia/` | Python + YOLOv11 (Ultralytics) |
-| Backend / API | `backend/` | Rust (gRPC via `tonic`) |
+| Backend / API | `backend/` | Rust + actix-web, `sqlx` para o banco (gRPC via `tonic` mais adiante) |
 | Frontend Web | `frontend/` | TypeScript + React |
 | Banco de dados | `db/` | PostgreSQL (container Docker, acesso via `sqlx` no backend) |
 | Orquestração | `docker-compose.yml` | Docker + Docker Compose |
@@ -35,7 +35,9 @@ entre ambientes Linux e Windows.
 │   ├── models/     # Pesos de modelo (ex.: yolo11n.pt) — não versionado
 │   ├── samples/    # Vídeos de teste locais — não versionado
 │   └── outputs/    # Resultados de inferência (runs/, vídeos gerados) — não versionado
-├── backend/        # API em Rust (ainda vazio — Fase 4)
+├── backend/        # API em Rust + actix-web
+│   ├── src/main.rs
+│   └── Cargo.toml  # Cargo.lock é versionado (é uma aplicação, não lib)
 ├── frontend/       # Web em TypeScript + React (ainda vazio — Fase 5)
 ├── db/             # Schema e migrations do PostgreSQL
 │   ├── migrations/ # Arquivos .sql numerados (compatíveis com sqlx-cli)
@@ -63,6 +65,23 @@ docker compose exec db psql -U basquete -d placar_basquete -c '\dt'
 ```
 
 Schema e decisões de modelagem documentados em `db/README.md`.
+
+### Backend / API
+
+Requer o banco rodando (passo acima) e o toolchain do Rust
+([rustup](https://rustup.rs)).
+
+```bash
+cd backend/
+cp .env.example .env   # e ajuste DATABASE_URL com as credenciais do .env da raiz
+cargo run
+```
+
+Endpoints disponíveis:
+
+| Método | Rota | O que faz |
+|---|---|---|
+| GET | `/health` | Responde `200` se a API alcança o banco, `503` se não |
 
 ### Serviço de IA
 

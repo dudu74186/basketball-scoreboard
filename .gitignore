@@ -22,8 +22,13 @@ build/
 .env.local
 
 # --- Rust (backend, Fase 4) ---
-/target/
-Cargo.lock
+# Sem barra no início: ignora target/ em qualquer nível (backend/target/
+# também). Com "/target/" só a raiz do repo seria coberta.
+target/
+# Cargo.lock NÃO entra aqui de propósito: para aplicações (binários), a
+# recomendação oficial do Rust é versionar o lock, garantindo que Linux,
+# Windows, Docker e CI compilem exatamente as mesmas versões. Só bibliotecas
+# é que o ignoram.
 
 # --- Editor / SO ---
 .obsidian/

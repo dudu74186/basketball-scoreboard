@@ -6,11 +6,9 @@ Este arquivo documenta o progresso da nossa colaboração, incluindo aulas didá
 
 ## 📌 ESTADO ATUAL (ler isto primeiro ao retomar) — atualizado 12/08/2026
 
-**Onde paramos:** Fases 0, 1, 2 e 3 de [[linha_do_tempo]] concluídas e
-validadas. Repositório público no ar:
-**https://github.com/dudu74186/basketball-scoreboard** (branch `main`,
-working tree limpo, tudo commitado e com push feito — 6 commits, último
-`69fd400`).
+**Onde paramos:** Fases 0, 1, 2 e 3 concluídas; **Fase 4 em andamento**
+(entrega 4a concluída, faltam 4b e 4c — ver [[linha_do_tempo]]).
+Repositório: **https://github.com/dudu74186/basketball-scoreboard**.
 
 **O que já funciona de ponta a ponta:**
 - Serviço de IA (`ia/`): builda e roda em Docker com GPU real (GTX 1650),
@@ -20,6 +18,10 @@ working tree limpo, tudo commitado e com push feito — 6 commits, último
   `docker compose up -d db`, schema completo aplicado (times, jogadores,
   partidas, eventos, view `vw_sumula`), testado com dados de exemplo e com
   as CHECK constraints rejeitando dado inválido.
+- Backend (`backend/`): Rust 1.97.1 + actix-web + sqlx. `cargo run` sobe a
+  API em `127.0.0.1:3000` com `GET /health` validando a conexão com o
+  Postgres (200 quando ok, 503 quando o banco está fora — testado nos dois
+  cenários). Precisa de `backend/.env` (já existe local, gitignored).
 
 Comandos de execução completos estão no `README.md` da raiz.
 
@@ -31,7 +33,8 @@ Comandos de execução completos estão no `README.md` da raiz.
 ├── ia/          (Python + YOLO — main.py, Dockerfile, requirements.txt, .env.example,
 │                 models/, samples/, outputs/ — os 3 últimos locais, fora do Git)
 ├── db/          (PostgreSQL — migrations/*.sql numeradas + README.md)
-├── backend/     (Rust — só .gitkeep, Fase 4 ainda não começou)
+├── backend/     (Rust + actix-web — src/main.rs, Cargo.toml, Cargo.lock versionado,
+│                 .env.example; target/ é local e gitignored)
 ├── frontend/    (TS+React — só .gitkeep, Fase 5 ainda não começou)
 ├── docker/      (reservado, ainda vazio)
 ├── docker-compose.yml  (orquestra só o serviço `db` por enquanto)
@@ -49,8 +52,11 @@ Comandos de execução completos estão no `README.md` da raiz.
 3. Licença do repositório: ainda não escolhida.
 4. Estratégia de branches (proteção de `main`): ainda não configurada, todo
    commit até agora foi direto em `main`.
-5. `rustup`/toolchain do Rust: ainda não instalado — vai ser necessário
-   assim que a Fase 4 (backend) começar.
+5. ~~`rustup`/toolchain do Rust~~ — instalado em 12/08/2026 (Rust 1.97.1,
+   via script oficial, em `~/.cargo`). Nota para sessões futuras: o
+   `.bashrc` do Arch tem `[[ $- != *i* ]] && return` no topo, então em
+   comandos não-interativos é preciso `source "$HOME/.cargo/env"` antes de
+   usar `cargo`/`rustc`.
 6. O container `basketball-db` pode estar rodando neste momento (subido
    durante o teste da Fase 3, via `docker compose up -d db`) — verificar com
    `docker ps` ao retomar; não há problema em deixar rodando ou parar com
@@ -61,10 +67,10 @@ Comandos de execução completos estão no `README.md` da raiz.
    [[linha_do_tempo]] para ser revisitado. **Não "corrigir" por conta
    própria** — foi decisão explícita dele.
 
-**Próximo passo natural:** Fase 4 — backend/API em Rust (`sqlx` para o
-PostgreSQL, `tonic`/gRPC para comunicar com o serviço de IA). **Ainda não
-iniciada** neste momento — ver ao final da Sessão 9 se o usuário seguiu
-direto para ela ou pausou por aqui.
+**Próximo passo:** entrega **4b** da Fase 4 — endpoints REST de `times`,
+`jogadores`, `partidas`, `eventos` e consulta da súmula (lendo `vw_sumula`),
+usando as macros do `sqlx` que validam SQL em tempo de compilação. Depois,
+4c (Dockerfile do backend + gRPC/tonic com o serviço de IA).
 
 **Regras de operação que continuam valendo** (detalhes em [[autorizacoes]] e
 [[funcoes]]): só editar diretamente dentro de `GEMINI/`; nunca editar `.py`
@@ -418,3 +424,78 @@ só escrito).
    `docker-compose.yml`, e `tonic`/gRPC para comunicar com `ia/`.
 3. Lembrar de checar `docker ps` — o container `basketball-db` pode ter
    ficado rodando desde o teste desta sessão.
+
+---
+
+## 🔁 Sessão 10 (12/08/2026 — sessão Claude Code): Fase 4a — fundação do backend Rust
+
+**O que aconteceu:**
+
+1. **Decisões do usuário** (regra de ouro: IA não escolhe ferramenta sozinha):
+   - Instalação do Rust: **script oficial rustup.rs** (entre 3 opções
+     oferecidas: script, pacman, ou só em container). Sem sudo, em
+     `~/.cargo`, mesmo método usado no Windows — ajuda na paridade.
+   - Framework web: **actix-web**. A IA havia recomendado `axum` (mesmo
+     ecossistema do `tonic`, que será usado na 4c); o usuário preferiu
+     actix-web e a escolha foi respeitada sem re-discussão. Os dois
+     integram com gRPC, actix só exige um pouco mais de conceito.
+
+2. Rust 1.97.1 instalado. Adicionada a linha `. "$HOME/.cargo/env"` ao
+   `~/.bashrc` (o instalador faria isso por padrão; foi rodado com
+   `--no-modify-path` para não mexer no shell sem avisar).
+   **Detalhe importante para sessões futuras:** o `.bashrc` do Arch começa
+   com `[[ $- != *i* ]] && return`, então em comandos NÃO-interativos o
+   cargo não entra no PATH — é preciso `source "$HOME/.cargo/env"` antes.
+
+3. `cargo init` em `backend/` (crate `basketball-api`), dependências:
+   actix-web 4, sqlx 0.9 (postgres/macros/chrono), serde, dotenvy,
+   env_logger, log.
+
+4. `backend/src/main.rs` escrito com:
+   - Pool de conexões `sqlx` (`PgPoolOptions`, max 5) compartilhado entre
+     os workers do actix via `web::Data`.
+   - `GET /health` que executa `SELECT 1` **de verdade** no Postgres —
+     health check que testa a dependência em vez de só devolver 200 vazio.
+     Retorna **503** (não 500) quando o banco está fora: o serviço está no
+     ar, a dependência é que não está.
+   - `BIND_ADDR` configurável, padrão `127.0.0.1:3000` (não expõe a API na
+     rede por acidente; em container vira `0.0.0.0`).
+
+5. **Testado de verdade, incluindo o caminho de falha:**
+   - `cargo build` limpo, sem warnings (53s na primeira compilação).
+   - Banco no ar → `{"status":"ok","banco":"conectado"}` HTTP 200.
+   - Container do banco **parado** → `{"status":"degradado",...}` HTTP 503.
+   - Banco religado → HTTP 200 de novo, com o pool se recuperando sozinho
+     (sem reiniciar a API).
+
+6. **Dois bugs reais encontrados no `.gitignore`** (herdados da Fase 1,
+   descobertos ao preparar o commit):
+   - `/target/` estava **ancorado na raiz** do repo por causa da barra
+     inicial, então NÃO cobria `backend/target/` — **1,2 GB** de artefatos
+     de build teriam entrado no `git add -A`. Corrigido para `target/`.
+   - `Cargo.lock` estava sendo ignorado. Para **aplicações** (binários), a
+     recomendação oficial do Rust é o oposto: versionar o lock, garantindo
+     que Linux, Windows, Docker e CI compilem exatamente as mesmas versões
+     das ~150 dependências. Importa também para segurança (Fase 7) e CI
+     (Fase 8). Removido do `.gitignore` e commitado.
+   - `backend/.gitkeep` removido (a pasta já tem conteúdo real).
+
+7. `backend/.env.example` criado; `backend/.env` real gerado localmente a
+   partir das credenciais do `.env` da raiz (gitignored, confirmado).
+
+8. `README.md` atualizado: stack do backend, árvore de pastas e seção
+   "Backend / API" em "Como rodar", com a tabela de endpoints.
+
+**Status:** entrega 4a concluída e validada. Faltam 4b (endpoints REST da
+súmula) e 4c (Dockerfile do backend + gRPC com o serviço de IA).
+
+**Próximos Passos na Retomada:**
+1. Entrega **4b**: endpoints de `times`, `jogadores`, `partidas`,
+   `eventos` e consulta da súmula (via `vw_sumula`), usando as macros
+   `query!`/`query_as!` do sqlx (validam SQL em tempo de compilação —
+   exigem o banco no ar durante o `cargo build`, ou `cargo sqlx prepare`
+   para modo offline; vale explicar isso ao usuário quando chegar lá).
+2. Entrega **4c**: Dockerfile multi-stage do backend, adicionar ao
+   `docker-compose.yml`, e gRPC via `tonic` para a comunicação com `ia/`.
+3. Lembrar: `source "$HOME/.cargo/env"` antes de usar cargo em comandos
+   não-interativos.
