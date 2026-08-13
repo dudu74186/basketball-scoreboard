@@ -75,11 +75,19 @@ Comandos de execução completos estão no `README.md` da raiz.
    [[linha_do_tempo]] para ser revisitado. **Não "corrigir" por conta
    própria** — foi decisão explícita dele.
 
-**Próximo passo:** **Fase 5 — Frontend Web** (TypeScript + React), consumindo
-a API REST já pronta. Alternativa igualmente válida, se o usuário preferir:
-voltar ao serviço de IA e fazer a detecção de cestas de verdade (hoje o
-`main.py` só detecta pessoas com o modelo genérico `yolo11n.pt`), fechando
-o ciclo IA -> gRPC -> banco -> súmula com dado real.
+**Próximo passo:** **Fase 5 — Frontend Web**, já com as decisões tomadas
+(Vite + React + TypeScript; escopo = painel de teste/operação). O usuário
+pausou ANTES de escrever qualquer código do frontend — a pasta `frontend/`
+segue só com `.gitkeep`. Detalhes e justificativas em [[linha_do_tempo]].
+
+⚠️ **Primeira coisa a fazer quando a Fase 5 começar:** adicionar `actix-cors`
+ao backend. Sem isso o navegador bloqueia as chamadas do Vite
+(`localhost:5173`) para a API (`localhost:3000`) e nada funciona.
+
+**Depois do frontend:** fase de IA (treino do YOLO), com plano de ordenação
+já definido e registrado em [[linha_do_tempo]] — resumo: bola+aro primeiro,
+depois tracking de jogadores, depois 2x3 pontos por homografia, e OCR de
+número de camisa por último.
 
 **Regras de operação que continuam valendo** (detalhes em [[autorizacoes]] e
 [[funcoes]]): só editar diretamente dentro de `GEMINI/`; nunca editar `.py`
@@ -667,3 +675,55 @@ por ser objetivo declarado de aprendizado do projeto. Decisão respeitada.
    usuário.
 3. Lembrar: `source "$HOME/.cargo/env"` antes de cargo em comandos não
    interativos; `cargo sqlx prepare` após mudar queries.
+
+---
+
+## 🔁 Sessão 13 (13/08/2026 — sessão Claude Code): decisões da Fase 5 e plano da fase de IA
+
+**Nada foi implementado nesta entrada** — o usuário pediu a recomendação de
+ordem, tomou as decisões, e pausou antes de começar o código do frontend.
+
+**Pergunta do usuário:** quer uma interface para facilitar os testes e
+depois treinar o YOLO para detectar "marcações, jogadores, números,
+cestas" — e perguntou qual ordem de criação seria recomendada.
+
+**Recomendação dada (e aceita): interface primeiro.** O argumento decisivo
+não foi "é mais fácil", e sim que **a interface vira a ferramenta de
+validação da própria IA**: quando o YOLO começar a detectar, será preciso
+ver o que ele detectou, corrigir e confirmar eventos. Fazendo a IA antes,
+a depuração seria no terminal lendo JSON.
+
+**Decisões do usuário para a Fase 5:**
+- **Vite + React + TypeScript** (em vez de Next.js — o backend já é o Rust,
+  os recursos de servidor do Next não seriam usados).
+- Escopo: **painel de teste/operação** (cadastro de times/jogadores, criar
+  partida, botões de cesta/falta, súmula ao lado) — e não apenas uma tela
+  de visualização, justamente para substituir o `curl` nos testes.
+
+**Plano da fase de IA registrado em [[linha_do_tempo]]** (seção própria no
+fim do arquivo). Pontos centrais do que foi analisado:
+- "Treinar o YOLO" foi reenquadrado como ~5 problemas distintos, não um.
+- Ordem recomendada: (a) bola+aro → (b) tracking de jogadores → (c) 2x3
+  pontos por **homografia, não YOLO** → (d) OCR de camisa por último.
+- (a)+(b) já entregam súmula automática funcionando.
+- O YOLO já detecta "person" de fábrica; falta só tracking (ByteTrack já
+  vem no ultralytics).
+- **O gargalo real é o dataset, não o treino** — sugerido partir de dataset
+  público (Roboflow Universe) em vez de anotar do zero.
+- **VRAM de 4 GB (GTX 1650)** limita a `yolo11n`/`yolo11s` em 640px com
+  batch pequeno.
+
+**Pendência técnica prevista (importante):** o backend **não tem CORS
+configurado**. É a primeira coisa a resolver quando a Fase 5 começar —
+adicionar `actix-cors`, senão o navegador bloqueia toda chamada do Vite
+para a API e o frontend não funciona.
+
+**Estado do repositório:** inalterado em relação à Sessão 12, exceto por
+esta documentação. `frontend/` continua só com `.gitkeep`.
+
+**Próximos Passos na Retomada:**
+1. `actix-cors` no backend (bloqueia tudo do frontend).
+2. `npm create vite@latest frontend -- --template react-ts` e construir o
+   painel de operação.
+3. Dockerizar o frontend e adicionar ao `docker-compose.yml` (Fase 6).
+4. Só então a fase de IA, na ordem registrada em [[linha_do_tempo]].

@@ -231,8 +231,24 @@ Dividida em 3 entregas incrementais. **Entrega 4a concluída em 12/08/2026.**
   testados: jogador inexistente e `tipo` não informado, ambos rejeitados.
 
 ### Fase 5 — Frontend Web
-- Linguagem/framework a escolher (opções no chat).
-- Consome a API (Fase 4), exibe súmula em tempo real.
+**Decisões tomadas pelo usuário em 13/08/2026 (ainda NÃO implementado — o
+usuário pediu para pausar antes de começar o código):**
+- Ferramenta: **Vite + React + TypeScript** (SPA). Escolhido em vez de
+  Next.js porque o backend já é o Rust — recursos de servidor do Next não
+  seriam usados.
+- Escopo da primeira interface: **painel de teste/operação**, não só
+  visualização. Numa tela: cadastrar times/jogadores, criar partida,
+  botões para registrar cesta/falta, e a súmula atualizando ao lado.
+- **Motivo de vir antes da IA:** essa tela vira a ferramenta de validação
+  da própria IA. Quando o YOLO começar a detectar, será preciso ver o que
+  ele detectou, corrigir erros e confirmar eventos — a interface de
+  operação já é isso. Construir a IA antes significaria depurá-la no
+  terminal lendo JSON.
+
+⚠️ **Pendência técnica prevista:** o backend ainda **não tem CORS
+configurado**. O navegador vai bloquear as chamadas de `localhost:5173`
+(Vite) para `localhost:3000` (API). Será preciso adicionar `actix-cors` ao
+backend antes do frontend funcionar.
 
 ### Fase 6 — Orquestração via Docker Compose
 - `docker-compose.yml` único subindo IA + backend + frontend + banco.
@@ -269,9 +285,39 @@ Dividida em 3 entregas incrementais. **Entrega 4a concluída em 12/08/2026.**
 ### Fase 10 — Testes de campo e documentação final
 - Testar com jogo real (já há vídeo de exemplo:
   `COMETAS X CESB - RODADA 16 - LCB 2021.mp4`).
-- Ajustar modelo YOLO (hoje é o `yolo11n.pt` genérico, ainda não treinado para
-  bola/aro/jogador).
 - Consolidar documentação do projeto (arquitetura final, decisões tomadas, licença).
+
+---
+
+## 🎯 Fase de IA — plano de ordenação (definido em 13/08/2026)
+
+> O usuário declarou a intenção de treinar o YOLO para detectar "marcações,
+> jogadores, números, cestas". Análise feita no chat e registrada aqui para
+> não se perder. **Nada disso foi iniciado ainda.**
+
+**Reenquadramento importante:** "treinar o YOLO" não é uma tarefa, são
+~5 problemas distintos, com dificuldades muito diferentes. Tentar resolver
+todos de uma vez é o erro clássico. Ordem recomendada, priorizando o que
+fecha um ciclo funcionando mais cedo:
+
+| # | Etapa | Racional | Dificuldade |
+|---|---|---|---|
+| a | **Bola + aro** (2 classes) | Bola cruzando o aro de cima para baixo = cesta. Já dá **placar automático** mesmo sem saber quem fez. Menor modelo, maior retorno. | Média |
+| b | **Rastreamento de jogadores** | O YOLO **já detecta "person" de fábrica** (confirmado no teste da Fase 2). Falta só tracking — o ultralytics tem ByteTrack/BoT-SORT embutido. "Quem estava com a bola no arremesso" atribui a cesta. | Baixa |
+| c | **2 ou 3 pontos** | **Não usar YOLO aqui.** Linha de quadra se resolve melhor com homografia (mapear a quadra para um plano 2D); a posição do arremessador decide. Mais robusto que treinar detecção de linha. | Média |
+| d | **Números de camisa (OCR)** | Deixar por **último** — de longe o mais difícil (número pequeno, borrado, girado, tapado, jogador de costas). Contorno viável: o operador associa "jogador rastreado nº3 = Eduardo" uma vez por partida, pela interface da Fase 5. | Alta |
+
+**(a) + (b) já entregam uma súmula automática funcionando** — só depois
+disso vale investir nas partes difíceis.
+
+**Dois pontos práticos levantados:**
+1. **O gargalo real é o dataset, não o treino.** Anotar bola/aro em
+   milhares de frames à mão é inviável. Procurar dataset público de
+   basquete (Roboflow Universe tem vários com bola/aro/jogador anotados)
+   e complementar com os vídeos do usuário.
+2. **A GTX 1650 tem 4 GB de VRAM.** Dá para treinar `yolo11n` e talvez
+   `yolo11s` em 640px com batch pequeno; modelos `m`/`l`/`x` não cabem.
+   Isso reforça a estratégia de poucas classes por modelo.
 
 ## Stack decidido pelo usuário (11/08/2026)
 
