@@ -7,7 +7,7 @@ Este arquivo documenta o progresso da nossa colaboração, incluindo aulas didá
 ## 📌 ESTADO ATUAL (ler isto primeiro ao retomar) — atualizado 12/08/2026
 
 **Onde paramos:** Fases 0, 1, 2 e 3 concluídas; **Fase 4 em andamento**
-(entrega 4a concluída, faltam 4b e 4c — ver [[linha_do_tempo]]).
+(entregas 4a e 4b concluídas, falta a 4c — ver [[linha_do_tempo]]).
 Repositório: **https://github.com/dudu74186/basketball-scoreboard**.
 
 **O que já funciona de ponta a ponta:**
@@ -19,9 +19,13 @@ Repositório: **https://github.com/dudu74186/basketball-scoreboard**.
   partidas, eventos, view `vw_sumula`), testado com dados de exemplo e com
   as CHECK constraints rejeitando dado inválido.
 - Backend (`backend/`): Rust 1.97.1 + actix-web + sqlx. `cargo run` sobe a
-  API em `127.0.0.1:3000` com `GET /health` validando a conexão com o
-  Postgres (200 quando ok, 503 quando o banco está fora — testado nos dois
-  cenários). Precisa de `backend/.env` (já existe local, gitignored).
+  API em `127.0.0.1:3000` com **11 endpoints** funcionando (health, times,
+  jogadores, partidas, eventos, súmula — tabela completa no `README.md`).
+  Testado de ponta a ponta contra o banco real, incluindo os caminhos de
+  erro. Precisa de `backend/.env` (já existe local, gitignored).
+  ⚠️ **`cargo build` exige o banco no ar** — as macros do sqlx validam o
+  SQL em tempo de compilação. Se der erro de compilação estranho em
+  queries, confira antes se o container `basketball-db` está de pé.
 
 Comandos de execução completos estão no `README.md` da raiz.
 
@@ -67,10 +71,11 @@ Comandos de execução completos estão no `README.md` da raiz.
    [[linha_do_tempo]] para ser revisitado. **Não "corrigir" por conta
    própria** — foi decisão explícita dele.
 
-**Próximo passo:** entrega **4b** da Fase 4 — endpoints REST de `times`,
-`jogadores`, `partidas`, `eventos` e consulta da súmula (lendo `vw_sumula`),
-usando as macros do `sqlx` que validam SQL em tempo de compilação. Depois,
-4c (Dockerfile do backend + gRPC/tonic com o serviço de IA).
+**Próximo passo:** entrega **4c** da Fase 4 — `Dockerfile` multi-stage do
+backend, adicionar o serviço ao `docker-compose.yml`, e a comunicação
+IA ↔ API via gRPC (`tonic`). Atenção: o build no Docker **não terá banco
+disponível**, então antes será preciso rodar `cargo sqlx prepare` (instala
+`sqlx-cli`) para gerar o cache `.sqlx/` e compilar em modo offline.
 
 **Regras de operação que continuam valendo** (detalhes em [[autorizacoes]] e
 [[funcoes]]): só editar diretamente dentro de `GEMINI/`; nunca editar `.py`
@@ -498,4 +503,75 @@ súmula) e 4c (Dockerfile do backend + gRPC com o serviço de IA).
 2. Entrega **4c**: Dockerfile multi-stage do backend, adicionar ao
    `docker-compose.yml`, e gRPC via `tonic` para a comunicação com `ia/`.
 3. Lembrar: `source "$HOME/.cargo/env"` antes de usar cargo em comandos
+   não-interativos.
+
+---
+
+## 🔁 Sessão 11 (12/08/2026 — sessão Claude Code): Fase 4b — API REST completa
+
+**O que aconteceu:** implementados os 11 endpoints da API, com o código
+organizado em módulos em vez de tudo no `main.rs`:
+
+```
+backend/src/
+├── main.rs      (bootstrap: env, pool, servidor, JsonConfig)
+├── erro.rs      (ApiError + traducao de SQLSTATE para status HTTP)
+├── modelos.rs   (structs das tabelas + TipoEvento)
+└── rotas/
+    ├── mod.rs, times.rs, jogadores.rs, partidas.rs, eventos.rs, sumula.rs
+```
+
+**Decisões de design que valem lembrar:**
+
+1. **Pontuação derivada no servidor.** O cliente manda só `tipo`
+   (`cesta_2`/`cesta_3`/`lance_livre`/`falta`); `TipoEvento::pontos()`
+   decide o valor. Testado: mandar `"pontos": 50` no corpo é simplesmente
+   ignorado, grava 2. Se o cliente mandasse a pontuação, nada impediria
+   registrar cesta de 2 valendo 50.
+2. **`TipoEvento` é enum, não String.** Valor inválido morre na
+   desserialização (400), sem nem chegar ao banco. O CHECK da migration
+   continua como última linha de defesa.
+3. **Erros de banco traduzidos por SQLSTATE** em `erro.rs`: `23505`→409
+   (unique), `23503`→400 (FK), `23514`→400 (check). Erro inesperado: log
+   completo no servidor, cliente recebe só `{"erro":"erro interno"}` —
+   não vazar detalhe de banco é item de OWASP (Fase 7).
+4. **Súmula é só leitura** (`GET /partidas/{id}/sumula`), lendo `vw_sumula`.
+   Não existe endpoint para "atualizar súmula" — ela é sempre derivada dos
+   eventos, coerente com a decisão da Fase 3.
+5. Na súmula foi preciso usar `AS "coluna!"` nas macros do sqlx: ele não
+   consegue inferir que colunas de view com SUM/COUNT não são nulas.
+
+**Dois defeitos encontrados nos próprios testes e corrigidos:**
+- Concordância: `"partida não encontrado"` (vinha de concatenar
+  `"{nome} não encontrado"`). `ApiError::NaoEncontrado` passou a carregar a
+  frase pronta.
+- JSON malformado devolvia **texto puro**, enquanto o resto da API devolve
+  `{"erro": ...}`. Um cliente que sempre faz `response.json()` quebraria só
+  no caminho de erro. Corrigido com `web::JsonConfig::error_handler` +
+  nova variante `ApiError::RequisicaoInvalida`.
+
+**Testado de ponta a ponta contra o banco real:**
+- Fluxo feliz: criar 2 times → 2 jogadores → 1 partida → 5 eventos →
+  súmula com os totais conferindo (7 e 1 pontos, 1 falta).
+- Caminhos de erro: 409 (camisa duplicada), 400 (FK inexistente), 400
+  (time contra si mesmo), 400 (modalidade `7x7`), 404 (partida e súmula
+  inexistentes), 400 (tipo inválido, JSON malformado, campo faltando).
+- Dados de teste removidos com TRUNCATE ao final; banco ficou limpo.
+
+**⚠️ Ponto de atenção para a 4c:** as macros do sqlx exigem o banco no ar
+durante o `cargo build`. O build dentro do Docker **não terá** banco, então
+antes da 4c é preciso instalar `sqlx-cli` e rodar `cargo sqlx prepare`, que
+gera o diretório `.sqlx/` (versionado) com o cache das queries, permitindo
+compilar em modo offline. Vale explicar isso ao usuário quando chegar lá.
+
+**Status:** entregas 4a e 4b concluídas. Falta a 4c.
+
+**Próximos Passos na Retomada:**
+1. `cargo sqlx prepare` (instalar `sqlx-cli` antes) para viabilizar build
+   offline.
+2. `Dockerfile` multi-stage do backend (builder + runtime enxuto) e
+   adicionar o serviço `backend` ao `docker-compose.yml` (`BIND_ADDR` deve
+   virar `0.0.0.0:3000` no container, e `DATABASE_URL` apontar para `db`).
+3. gRPC via `tonic` para o serviço de IA reportar eventos à API.
+4. Lembrar: `source "$HOME/.cargo/env"` antes de usar cargo em comandos
    não-interativos.

@@ -2,6 +2,10 @@ use actix_web::{get, web, App, HttpResponse, HttpServer, Responder};
 use sqlx::postgres::PgPoolOptions;
 use sqlx::PgPool;
 
+mod erro;
+mod modelos;
+mod rotas;
+
 /// Resposta do /health. O `derive(Serialize)` é o que ensina o serde a
 /// transformar esta struct em JSON.
 #[derive(serde::Serialize)]
@@ -61,11 +65,20 @@ async fn main() -> std::io::Result<()> {
     log::info!("API ouvindo em http://{bind_addr}");
 
     HttpServer::new(move || {
+        // Sem isto, um JSON malformado devolve texto puro, enquanto todo o
+        // resto da API devolve {"erro": "..."}. Um cliente que sempre faz
+        // response.json() quebraria justamente no caminho de erro.
+        let json_cfg = web::JsonConfig::default().error_handler(|err, _req| {
+            erro::ApiError::RequisicaoInvalida(err.to_string()).into()
+        });
+
         App::new()
             // O pool é compartilhado entre todos os workers do actix; o
             // clone aqui é barato (é um ponteiro contado, não copia o pool).
             .app_data(web::Data::new(pool.clone()))
+            .app_data(json_cfg)
             .service(health)
+            .configure(rotas::configurar)
     })
     .bind(&bind_addr)?
     .run()

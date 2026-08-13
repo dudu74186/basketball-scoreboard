@@ -157,10 +157,35 @@ Dividida em 3 entregas incrementais. **Entrega 4a concluída em 12/08/2026.**
   o commit); e `Cargo.lock` estava sendo ignorado, quando a recomendação
   oficial do Rust é versioná-lo para aplicações.
 
-**4b — API REST da súmula (pendente):**
-- Endpoints de `times`, `jogadores`, `partidas`, `eventos` e consulta da
-  súmula (lendo de `vw_sumula`).
-- Usar as macros do `sqlx` que validam SQL em tempo de compilação.
+**4b — API REST da súmula (✅ concluída em 12/08/2026):**
+- Código organizado em módulos: `erro.rs`, `modelos.rs` e `rotas/`
+  (um arquivo por recurso), em vez de tudo no `main.rs`.
+- 11 endpoints no total (tabela completa no `README.md`): CRUD de times,
+  jogadores e partidas, registro/listagem de eventos e consulta da súmula.
+- Todas as queries usam as macros `query_as!`/`query_scalar!` do sqlx —
+  **validadas contra o banco real em tempo de compilação**. Nome de coluna
+  errado ou tipo incompatível vira erro de compilação.
+  ⚠️ Consequência prática: `cargo build` **exige o banco no ar**. Para
+  build sem banco (necessário no Docker da 4c), vai ser preciso
+  `cargo sqlx prepare` (modo offline, gera `.sqlx/` que é versionado).
+- **Pontuação derivada no servidor:** o cliente envia só o `tipo` do evento;
+  `TipoEvento::pontos()` decide quantos pontos vale. Testado que enviar
+  `"pontos": 50` no corpo é ignorado. A regra vive num lugar só.
+- `TipoEvento` é enum, não texto livre: valor inválido é rejeitado já na
+  desserialização (400), antes de chegar ao banco.
+- Tratamento de erro centralizado em `erro.rs`, traduzindo códigos SQLSTATE
+  do Postgres em status HTTP: `23505`→409, `23503`→400, `23514`→400,
+  não-encontrado→404. Erros inesperados: detalhe só no log do servidor,
+  cliente recebe `{"erro": "erro interno"}` — não vazar mensagem de banco
+  na resposta é item de OWASP (Fase 7).
+- Dois defeitos encontrados no próprio teste e corrigidos: concordância
+  ("partida não encontrado" → "não encontrada") e erros de JSON malformado
+  que saíam em texto puro em vez do formato `{"erro": ...}` padrão da API
+  (corrigido com um `JsonConfig::error_handler`).
+- Testado de ponta a ponta com o banco real: fluxo completo (criar times →
+  jogadores → partida → eventos → súmula, com os totais conferindo) e todos
+  os caminhos de erro (409, 400 de FK, 400 de CHECK, 404, JSON inválido).
+  Dados de teste limpos com TRUNCATE ao final.
 
 **4c — Containerizar e integrar (pendente):**
 - `Dockerfile` multi-stage do backend + adicionar ao `docker-compose.yml`.

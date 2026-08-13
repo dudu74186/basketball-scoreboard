@@ -82,6 +82,25 @@ Endpoints disponíveis:
 | Método | Rota | O que faz |
 |---|---|---|
 | GET | `/health` | Responde `200` se a API alcança o banco, `503` se não |
+| GET | `/times` | Lista os times |
+| POST | `/times` | Cria um time — `{"nome": "..."}` |
+| GET | `/jogadores?time_id=N` | Lista jogadores (o filtro é opcional) |
+| POST | `/jogadores` | Cria jogador — `{"nome", "numero_camisa", "time_id"}` |
+| GET | `/partidas` | Lista as partidas |
+| GET | `/partidas/{id}` | Detalhe de uma partida |
+| POST | `/partidas` | Cria partida — `{"modalidade", "time_casa_id", "time_visitante_id"}` |
+| GET | `/partidas/{id}/eventos` | Lista os eventos da partida |
+| POST | `/partidas/{id}/eventos` | Registra evento — `{"jogador_id", "tipo", "tempo_video_ms"}` |
+| GET | `/partidas/{id}/sumula` | Súmula: pontos e faltas por jogador |
+
+`tipo` aceita `cesta_2`, `cesta_3`, `lance_livre` ou `falta`. **A pontuação
+não é enviada pelo cliente** — o servidor a deriva do tipo, então não há como
+registrar uma cesta de 2 valendo 50.
+
+Erros seguem sempre o mesmo formato, `{"erro": "..."}`, com o status
+adequado: `400` (dado inválido), `404` (não existe), `409` (conflito, ex.:
+dois jogadores com a mesma camisa no time) e `500` (erro interno, com o
+detalhe apenas no log do servidor).
 
 ### Serviço de IA
 
