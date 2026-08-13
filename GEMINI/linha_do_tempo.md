@@ -149,6 +149,17 @@ Fase 10 → Testes de campo real + refinamento do modelo + documentação final
 - Paridade Linux/Windows validada (o mesmo compose funciona nos dois SOs).
 
 ### Fase 7 — Segurança aplicada (estudo prático, transversal)
+- **Dívida de segurança já identificada e aceita conscientemente pelo
+  usuário (12/08/2026):** o serviço `db` do `docker-compose.yml` publica a
+  porta como `"5432:5432"`, ou seja, escuta em `0.0.0.0` — o banco é
+  alcançável por qualquer dispositivo da rede local (máquina está em
+  `192.168.3.63`). Foi apontado durante a Fase 3 e o usuário **optou por
+  manter exposto**, para poder acessar o banco a partir da outra máquina
+  (Windows). Mitigação atual: a senha do `.env` é aleatória e forte.
+  **Revisitar aqui:** trocar para `"127.0.0.1:5432:5432"` quando o acesso
+  remoto não for mais necessário, ou substituir por uma solução melhor
+  (rede Docker interna + túnel SSH, ou autenticação/TLS no Postgres).
+  Cuidado extra em redes públicas (Wi-Fi de faculdade/café).
 - HTTPS/TLS entre os serviços.
 - Autenticação/autorização na API (ex.: JWT, OAuth — a estudar).
 - Gestão de segredos (variáveis de ambiente, `.env` fora do Git, secrets do Docker).

@@ -55,6 +55,11 @@ Comandos de execução completos estão no `README.md` da raiz.
    durante o teste da Fase 3, via `docker compose up -d db`) — verificar com
    `docker ps` ao retomar; não há problema em deixar rodando ou parar com
    `docker compose down`.
+7. **Dívida de segurança aceita conscientemente:** o banco está publicado em
+   `0.0.0.0:5432` (alcançável pela rede local). Usuário optou por manter
+   assim para acessar do PC Windows. Registrado na Fase 7 de
+   [[linha_do_tempo]] para ser revisitado. **Não "corrigir" por conta
+   própria** — foi decisão explícita dele.
 
 **Próximo passo natural:** Fase 4 — backend/API em Rust (`sqlx` para o
 PostgreSQL, `tonic`/gRPC para comunicar com o serviço de IA). **Ainda não
