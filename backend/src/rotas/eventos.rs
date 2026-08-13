@@ -28,24 +28,15 @@ async fn criar(
     id: web::Path<i32>,
     corpo: web::Json<NovoEvento>,
 ) -> Result<HttpResponse, ApiError> {
-    let partida_id = id.into_inner();
-
-    // A pontuação vem do próprio tipo do evento — o cliente não manda
-    // `pontos`. Ver TipoEvento::pontos() em modelos.rs.
-    let pontos = corpo.tipo.pontos();
-
-    let evento = sqlx::query_as!(
-        Evento,
-        "INSERT INTO eventos (partida_id, jogador_id, tipo, pontos, tempo_video_ms)
-         VALUES ($1, $2, $3, $4, $5)
-         RETURNING id, partida_id, jogador_id, tipo, pontos, tempo_video_ms, criado_em",
-        partida_id,
+    // A gravação (e a regra de pontuação) vive em repositorio.rs, para o
+    // caminho gRPC usar exatamente a mesma lógica.
+    let evento = crate::repositorio::inserir_evento(
+        pool.get_ref(),
+        id.into_inner(),
         corpo.jogador_id,
-        corpo.tipo.como_texto(),
-        pontos,
-        corpo.tempo_video_ms
+        corpo.tipo,
+        corpo.tempo_video_ms,
     )
-    .fetch_one(pool.get_ref())
     .await?;
 
     Ok(HttpResponse::Created().json(evento))

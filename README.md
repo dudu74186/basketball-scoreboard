@@ -30,8 +30,11 @@ entre ambientes Linux e Windows.
 .
 ├── docs/           # Documentação e planejamento do projeto (vault Obsidian)
 ├── GEMINI/         # Contexto/memória do assistente de IA (não editar manualmente)
+├── proto/          # Contrato gRPC compartilhado entre a IA e o backend
 ├── ia/             # Serviço de visão computacional (Python + YOLO)
 │   ├── main.py
+│   ├── cliente_placar.py  # Cliente gRPC que reporta eventos à API
+│   ├── gerado/     # Stubs gerados do .proto (via ./gerar_stubs.sh)
 │   ├── models/     # Pesos de modelo (ex.: yolo11n.pt) — não versionado
 │   ├── samples/    # Vídeos de teste locais — não versionado
 │   └── outputs/    # Resultados de inferência (runs/, vídeos gerados) — não versionado
@@ -56,13 +59,16 @@ pendências no diário de bordo do projeto.
 
 ## Como rodar (por enquanto)
 
-### Banco de dados
+### Stack completa (banco + API)
 
 ```bash
 cp .env.example .env   # e troque a senha
-docker compose up -d db
-docker compose exec db psql -U basquete -d placar_basquete -c '\dt'
+docker compose up -d
+curl localhost:3000/health
 ```
+
+Sobe o PostgreSQL e a API juntos. A API só inicia depois que o banco fica
+saudável (`depends_on: condition: service_healthy`).
 
 Schema e decisões de modelagem documentados em `db/README.md`.
 
@@ -101,6 +107,44 @@ Erros seguem sempre o mesmo formato, `{"erro": "..."}`, com o status
 adequado: `400` (dado inválido), `404` (não existe), `409` (conflito, ex.:
 dois jogadores com a mesma camisa no time) e `500` (erro interno, com o
 detalhe apenas no log do servidor).
+
+#### Rodando o backend localmente (sem Docker)
+
+```bash
+cd backend/
+cp .env.example .env   # ajuste DATABASE_URL com as credenciais do .env da raiz
+cargo run
+```
+
+⚠️ As macros do `sqlx` validam o SQL **em tempo de compilação**, então
+`cargo build` precisa do banco no ar (`docker compose up -d db`). Se alterar
+alguma query, rode `cargo sqlx prepare` para atualizar o cache em
+`backend/.sqlx/` — é ele que permite compilar sem banco dentro do Docker.
+
+### Comunicação IA → API (gRPC)
+
+O serviço de visão computacional reporta as cestas detectadas via gRPC, na
+porta `50051`. O contrato fica em `proto/placar.proto` — fora de `backend/`
+e de `ia/` de propósito, porque é o acordo entre os dois.
+
+| RPC | Tipo | Uso |
+|---|---|---|
+| `RegistrarEvento` | unário | Um evento, com confirmação |
+| `RegistrarEventos` | client streaming | Fluxo de eventos por uma única conexão, com resumo ao final |
+
+O lado Rust regenera o código a cada `cargo build` (via `build.rs`). O lado
+Python precisa de `./ia/gerar_stubs.sh` quando o `.proto` mudar.
+
+```python
+from ia.cliente_placar import ClientePlacar
+
+with ClientePlacar() as c:
+    c.registrar(partida_id=1, jogador_id=1, tipo="cesta_3", tempo_video_ms=42000)
+```
+
+Assim como no REST, **a pontuação não é enviada pelo cliente** — o servidor
+a deriva do tipo do evento, usando o mesmo código (`repositorio.rs`) que a
+rota REST usa.
 
 ### Serviço de IA
 

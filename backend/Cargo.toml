@@ -9,5 +9,14 @@ chrono = { version = "0.4.45", features = ["serde"] }
 dotenvy = "0.15.7"
 env_logger = "0.11.11"
 log = "0.4.33"
+prost = "0.14.4"
 serde = { version = "1.0.229", features = ["derive"] }
 sqlx = { version = "0.9.0", features = ["runtime-tokio", "tls-rustls", "postgres", "macros", "chrono"] }
+tokio = { version = "1.53.1", features = ["rt-multi-thread", "macros"] }
+tokio-stream = "0.1.19"
+tonic = "0.14.6"
+tonic-prost = "0.14.6"
+
+[build-dependencies]
+tonic-build = "0.14.6"
+tonic-prost-build = "0.14.6"

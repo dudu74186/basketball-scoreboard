@@ -1,0 +1,52 @@
+syntax = "proto3";
+
+package placar;
+
+// Contrato entre o serviço de visão computacional (Python) e a API (Rust).
+//
+// Este arquivo fica na raiz do repositório, e não dentro de backend/ ou ia/,
+// porque não pertence a nenhum dos dois: é o acordo entre eles. As duas
+// linguagens geram código a partir daqui, então mudar uma mensagem quebra
+// os dois lados — o que é justamente a intenção de um contrato explícito.
+
+service Placar {
+  // Registra um único evento detectado. Use quando a detecção é pontual.
+  rpc RegistrarEvento(EventoDetectado) returns (EventoRegistrado);
+
+  // Fluxo contínuo: a IA envia eventos conforme processa o vídeo, sem
+  // esperar resposta a cada um, e recebe um resumo quando o fluxo termina.
+  // É aqui que o gRPC se paga em relação a um POST por evento — uma única
+  // conexão HTTP/2 carrega todos eles.
+  rpc RegistrarEventos(stream EventoDetectado) returns (ResumoRegistro);
+}
+
+enum TipoEvento {
+  // O proto3 exige que o primeiro valor do enum seja zero e ele funciona
+  // como "não informado" — por isso um valor explícito de placeholder, em
+  // vez de deixar CESTA_2 cair no zero e virar o padrão silencioso.
+  TIPO_EVENTO_NAO_ESPECIFICADO = 0;
+  CESTA_2 = 1;
+  CESTA_3 = 2;
+  LANCE_LIVRE = 3;
+  FALTA = 4;
+}
+
+message EventoDetectado {
+  int32 partida_id = 1;
+  int32 jogador_id = 2;
+  TipoEvento tipo = 3;
+  // Momento do vídeo em que a detecção ocorreu, em milissegundos.
+  optional int32 tempo_video_ms = 4;
+}
+
+message EventoRegistrado {
+  int32 id = 1;
+  // Pontuação decidida pelo servidor a partir do tipo — o cliente não
+  // envia pontos, mesma regra da API REST.
+  int32 pontos = 2;
+}
+
+message ResumoRegistro {
+  int32 eventos_registrados = 1;
+  int32 pontos_totais = 2;
+}

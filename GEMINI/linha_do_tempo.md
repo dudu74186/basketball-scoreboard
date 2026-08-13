@@ -187,10 +187,48 @@ Dividida em 3 entregas incrementais. **Entrega 4a concluída em 12/08/2026.**
   os caminhos de erro (409, 400 de FK, 400 de CHECK, 404, JSON inválido).
   Dados de teste limpos com TRUNCATE ao final.
 
-**4c — Containerizar e integrar (pendente):**
-- `Dockerfile` multi-stage do backend + adicionar ao `docker-compose.yml`.
-- Comunicação IA ↔ API via gRPC (`tonic`), conforme decidido em
-  [[sugestoes]].
+**4c — Containerizar e integrar (✅ concluída em 13/08/2026):**
+- `sqlx-cli` instalado; `cargo sqlx prepare` gera `backend/.sqlx/` (11
+  queries em cache, **versionado**). Com `SQLX_OFFLINE=true`, as macros do
+  sqlx validam pelo cache em vez de consultar o banco — é o que viabiliza
+  compilar dentro do Docker, onde não há banco.
+- `backend/Dockerfile` multi-stage: imagem final **145 MB** contra 1,27 GB
+  da imagem de compilação. Runtime sem compilador, sem código-fonte, sem
+  cargo. Camada de cache de dependências separada do código.
+- Roda como **usuário não-root** (uid 10001), confirmado com `id` dentro do
+  container.
+- **Contexto de build é a raiz do repo**, não `backend/` — o `build.rs`
+  precisa de `proto/placar.proto`. Por isso existe um `.dockerignore` na
+  raiz excluindo `**/target/`, mídia da IA, `.git/` etc.
+- Serviço `backend` no `docker-compose.yml`, com
+  `depends_on: db: condition: service_healthy` (não basta "iniciado": a API
+  falharia ao abrir o pool se subisse antes do banco ficar pronto).
+- **gRPC implementado** (decisão do usuário, mantida após a IA levantar que
+  REST bastaria para o volume real de ~100 eventos/partida; o usuário
+  preferiu gRPC por ser objetivo de aprendizado do projeto):
+  - `proto/placar.proto` na raiz — contrato compartilhado, não pertence a
+    nenhum dos dois serviços.
+  - Rust: `tonic` 0.14 + `tonic-prost-build` no `build.rs` (regenera o
+    código a cada `cargo build`; o gerado não é versionado). Servidor sobe
+    em **thread própria com runtime tokio próprio**, porque misturar com o
+    runtime do actix-web causa problemas sutis.
+  - Dois RPCs: `RegistrarEvento` (unário) e `RegistrarEventos` (client
+    streaming — uma conexão HTTP/2 para todo o fluxo de detecções).
+  - Python: `ia/cliente_placar.py` + stubs em `ia/gerado/` (versionados,
+    para o build da imagem de IA não precisar de protoc). Regeneração via
+    `ia/gerar_stubs.sh`, que também corrige o import absoluto que o protoc
+    gera e que quebraria o import como pacote.
+- **`repositorio.rs` criado** para REST e gRPC compartilharem a gravação do
+  evento e a regra de pontuação. Sem isso, os dois caminhos poderiam
+  divergir e o bug apareceria como "a súmula muda dependendo de quem
+  registrou o evento".
+- Erros de banco traduzidos para status gRPC (`INVALID_ARGUMENT`,
+  `ALREADY_EXISTS`, `INTERNAL`), sem vazar detalhe do banco — mesma
+  política do lado REST.
+- Testado de ponta a ponta com a stack containerizada: cliente Python
+  enviou 6 detecções por streaming, e a súmula lida via REST bateu
+  exatamente (Eduardo 5 pts + 1 falta, Marcos 6 pts). Erros também
+  testados: jogador inexistente e `tipo` não informado, ambos rejeitados.
 
 ### Fase 5 — Frontend Web
 - Linguagem/framework a escolher (opções no chat).

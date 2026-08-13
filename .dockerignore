@@ -1,0 +1,20 @@
+# Contexto de build compartilhado (a raiz do repo), porque o backend precisa
+# alcançar tanto backend/ quanto proto/. Sem estas exclusões, o Docker
+# enviaria vários GB de artefatos e mídia a cada build.
+
+**/target/
+**/__pycache__/
+**/node_modules/
+
+# Mídia e modelos do serviço de IA
+ia/models/
+ia/samples/
+ia/outputs/
+*.mp4
+*.avi
+*.pt
+
+.git/
+**/.env
+docs/
+GEMINI/

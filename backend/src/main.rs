@@ -3,7 +3,9 @@ use sqlx::postgres::PgPoolOptions;
 use sqlx::PgPool;
 
 mod erro;
+mod grpc;
 mod modelos;
+mod repositorio;
 mod rotas;
 
 /// Resposta do /health. O `derive(Serialize)` é o que ensina o serde a
@@ -62,6 +64,12 @@ async fn main() -> std::io::Result<()> {
     // 127.0.0.1 por padrão: a API não fica exposta na rede sem querer.
     // Dentro do Docker isso precisa virar 0.0.0.0, daí ser configurável.
     let bind_addr = std::env::var("BIND_ADDR").unwrap_or_else(|_| "127.0.0.1:3000".to_string());
+
+    // O servidor gRPC sobe em paralelo, numa porta própria. É por ele que o
+    // serviço de IA reporta as cestas detectadas.
+    let grpc_addr = std::env::var("GRPC_ADDR").unwrap_or_else(|_| "127.0.0.1:50051".to_string());
+    grpc::iniciar(pool.clone(), grpc_addr);
+
     log::info!("API ouvindo em http://{bind_addr}");
 
     HttpServer::new(move || {

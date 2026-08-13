@@ -6,26 +6,29 @@ Este arquivo documenta o progresso da nossa colaboração, incluindo aulas didá
 
 ## 📌 ESTADO ATUAL (ler isto primeiro ao retomar) — atualizado 12/08/2026
 
-**Onde paramos:** Fases 0, 1, 2 e 3 concluídas; **Fase 4 em andamento**
-(entregas 4a e 4b concluídas, falta a 4c — ver [[linha_do_tempo]]).
-Repositório: **https://github.com/dudu74186/basketball-scoreboard**.
+**Onde paramos:** Fases 0, 1, 2, 3 e **4 concluídas** (4a, 4b e 4c todas
+entregues e validadas). Repositório:
+**https://github.com/dudu74186/basketball-scoreboard**.
 
 **O que já funciona de ponta a ponta:**
 - Serviço de IA (`ia/`): builda e roda em Docker com GPU real (GTX 1650),
   lê modelo/vídeo/saída via variáveis de ambiente, persiste resultado no
-  host via volumes.
-- Banco de dados (`db/` + `docker-compose.yml`): PostgreSQL 17 sobe via
-  `docker compose up -d db`, schema completo aplicado (times, jogadores,
-  partidas, eventos, view `vw_sumula`), testado com dados de exemplo e com
-  as CHECK constraints rejeitando dado inválido.
-- Backend (`backend/`): Rust 1.97.1 + actix-web + sqlx. `cargo run` sobe a
-  API em `127.0.0.1:3000` com **11 endpoints** funcionando (health, times,
-  jogadores, partidas, eventos, súmula — tabela completa no `README.md`).
-  Testado de ponta a ponta contra o banco real, incluindo os caminhos de
-  erro. Precisa de `backend/.env` (já existe local, gitignored).
-  ⚠️ **`cargo build` exige o banco no ar** — as macros do sqlx validam o
-  SQL em tempo de compilação. Se der erro de compilação estranho em
-  queries, confira antes se o container `basketball-db` está de pé.
+  host via volumes. **Ainda não integrado ao pipeline** — o `main.py` só
+  detecta objetos genéricos (pessoas), não cestas.
+- Banco (`db/`): PostgreSQL 17, schema completo, view `vw_sumula`.
+- Backend (`backend/`): Rust + actix-web + sqlx, **11 endpoints REST** e
+  **servidor gRPC** (porta 50051) com 2 RPCs. Containerizado (imagem de
+  145 MB, usuário não-root).
+- **A stack inteira sobe com `docker compose up -d`** (banco + API juntos,
+  com a API esperando o banco ficar saudável).
+- Cliente gRPC em Python (`ia/cliente_placar.py`) testado contra o backend
+  containerizado: eventos enviados por streaming aparecem corretamente na
+  súmula lida via REST.
+
+⚠️ **Ao mexer no backend:** `cargo build` exige o banco no ar (macros do
+sqlx validam SQL em tempo de compilação). Se alterar alguma query, rode
+`cargo sqlx prepare` para atualizar `backend/.sqlx/`, senão o build do
+Docker quebra.
 
 Comandos de execução completos estão no `README.md` da raiz.
 
@@ -37,8 +40,9 @@ Comandos de execução completos estão no `README.md` da raiz.
 ├── ia/          (Python + YOLO — main.py, Dockerfile, requirements.txt, .env.example,
 │                 models/, samples/, outputs/ — os 3 últimos locais, fora do Git)
 ├── db/          (PostgreSQL — migrations/*.sql numeradas + README.md)
-├── backend/     (Rust + actix-web — src/main.rs, Cargo.toml, Cargo.lock versionado,
-│                 .env.example; target/ é local e gitignored)
+├── proto/       (placar.proto — contrato gRPC compartilhado IA <-> backend)
+├── backend/     (Rust — src/{main,erro,modelos,repositorio,grpc}.rs + rotas/,
+│                 build.rs, Dockerfile, .sqlx/ versionado; target/ gitignored)
 ├── frontend/    (TS+React — só .gitkeep, Fase 5 ainda não começou)
 ├── docker/      (reservado, ainda vazio)
 ├── docker-compose.yml  (orquestra só o serviço `db` por enquanto)
@@ -71,11 +75,11 @@ Comandos de execução completos estão no `README.md` da raiz.
    [[linha_do_tempo]] para ser revisitado. **Não "corrigir" por conta
    própria** — foi decisão explícita dele.
 
-**Próximo passo:** entrega **4c** da Fase 4 — `Dockerfile` multi-stage do
-backend, adicionar o serviço ao `docker-compose.yml`, e a comunicação
-IA ↔ API via gRPC (`tonic`). Atenção: o build no Docker **não terá banco
-disponível**, então antes será preciso rodar `cargo sqlx prepare` (instala
-`sqlx-cli`) para gerar o cache `.sqlx/` e compilar em modo offline.
+**Próximo passo:** **Fase 5 — Frontend Web** (TypeScript + React), consumindo
+a API REST já pronta. Alternativa igualmente válida, se o usuário preferir:
+voltar ao serviço de IA e fazer a detecção de cestas de verdade (hoje o
+`main.py` só detecta pessoas com o modelo genérico `yolo11n.pt`), fechando
+o ciclo IA -> gRPC -> banco -> súmula com dado real.
 
 **Regras de operação que continuam valendo** (detalhes em [[autorizacoes]] e
 [[funcoes]]): só editar diretamente dentro de `GEMINI/`; nunca editar `.py`
@@ -575,3 +579,91 @@ compilar em modo offline. Vale explicar isso ao usuário quando chegar lá.
 3. gRPC via `tonic` para o serviço de IA reportar eventos à API.
 4. Lembrar: `source "$HOME/.cargo/env"` antes de usar cargo em comandos
    não-interativos.
+
+---
+
+## 🔁 Sessão 12 (13/08/2026 — sessão Claude Code): Fase 4c — containerização e gRPC
+
+**O que aconteceu:** fechada a Fase 4 com a containerização do backend e a
+comunicação IA ↔ API via gRPC.
+
+### Parte 1 — Containerização
+
+1. `sqlx-cli` instalado; `cargo sqlx prepare` gerou `backend/.sqlx/` com 11
+   queries em cache. **Versionado de propósito** — com `SQLX_OFFLINE=true`,
+   é o que permite compilar sem banco dentro do Docker.
+2. `backend/Dockerfile` multi-stage: **145 MB** finais contra 1,27 GB da
+   imagem `rust:1.97-slim` usada para compilar. Camada de dependências
+   separada do código (mexer no src não recompila as ~150 dependências).
+3. Roda como **não-root** (uid 10001) — confirmado com `id` no container.
+4. Serviço `backend` no compose, com `depends_on: condition:
+   service_healthy`.
+5. Validado: stack completa sobe junta, os 11 endpoints respondem pelo
+   container, e os dados sobrevivem a restart do backend e do banco.
+
+### Parte 2 — gRPC (decisão do usuário)
+
+**Contexto da decisão:** a IA levantou honestamente que, para o volume real
+de tráfego IA→API (~100 eventos por partida, uma cesta a cada ~30s), o
+endpoint REST `POST /partidas/{id}/eventos` já resolveria, e que gRPC
+adicionaria complexidade (codegen em duas linguagens, segunda porta,
+schemas sincronizados) sem ganho prático — o link onde performance importa
+é câmera→IA, que não passa por aí. **O usuário optou por gRPC mesmo assim**,
+por ser objetivo declarado de aprendizado do projeto. Decisão respeitada.
+
+6. `proto/placar.proto` criado **na raiz do repo** — é contrato entre os
+   dois serviços, não pertence a nenhum deles.
+7. Rust: `tonic` 0.14 + `tonic-prost-build`. Atenção: no tonic 0.14 o
+   codegen prost saiu para crates separados (`tonic-prost`,
+   `tonic-prost-build`) — `tonic_build::compile_protos` sozinho não basta.
+8. **O servidor gRPC roda em thread própria com runtime tokio próprio.**
+   O actix-web usa um runtime com características diferentes; misturar os
+   dois no mesmo executor causa problemas sutis. Duas threads, dois
+   runtimes.
+9. Dois RPCs: `RegistrarEvento` (unário) e `RegistrarEventos` (client
+   streaming — uma conexão HTTP/2 para todo o fluxo de detecções).
+10. **`repositorio.rs` extraído**: REST e gRPC chamam a MESMA função para
+    gravar evento e derivar pontuação. Sem isso, os dois caminhos poderiam
+    divergir e o sintoma seria "a súmula muda dependendo de quem registrou".
+11. Python: `ia/cliente_placar.py` (com context manager) + stubs em
+    `ia/gerado/`, **versionados** para o build da imagem de IA não precisar
+    de protoc. `ia/gerar_stubs.sh` regenera e corrige o import absoluto que
+    o protoc gera (`import placar_pb2`), que quebraria o import como pacote.
+
+### Detalhes técnicos que custaram tempo (para não repetir)
+
+- O prost **encurta nomes de enum**: `TIPO_EVENTO_NAO_ESPECIFICADO` no
+  .proto vira `TipoEvento::NaoEspecificado` no Rust (remove o prefixo
+  repetido do nome do enum). Primeiro build falhou por isso.
+- O **contexto de build do Docker teve que virar a raiz do repo**, porque
+  o `build.rs` lê `../proto/placar.proto`. Exigiu criar `.dockerignore` na
+  raiz (excluindo `**/target/`, mídia da IA, `.git/`) e ajustar todos os
+  `COPY` do Dockerfile para caminhos a partir da raiz.
+- `protobuf-compiler` precisou ser instalado **dentro** da imagem builder.
+
+### Testes feitos (todos passaram)
+
+- RPC unário: `cesta_3` → 3 pontos.
+- Streaming: 6 detecções numa conexão → 11 pontos, resumo correto.
+- Erros: jogador inexistente → `INVALID_ARGUMENT`; `tipo` não informado →
+  `INVALID_ARGUMENT` (importante: no proto3 campo não preenchido chega como
+  zero, e rejeitar explicitamente evita virar "cesta de 2" silenciosa).
+- **Teste cruzado:** eventos gravados via gRPC aparecem corretos na súmula
+  lida via REST — prova que os dois caminhos convergem no mesmo lugar.
+- Tudo repetido contra a stack **containerizada**, não só local.
+- Dados de teste limpos com TRUNCATE ao final.
+
+**Status:** Fase 4 concluída inteira (4a + 4b + 4c).
+
+**Próximos Passos na Retomada:**
+1. **Fase 5 — Frontend Web** (TypeScript + React) consumindo a API REST.
+   Perguntar ao usuário qual ferramenta de build/framework (Vite? Next?) —
+   regra de ouro: não escolher sozinho.
+2. **Alternativa que talvez valha mais:** voltar ao serviço de IA e fazer
+   a detecção de cestas de verdade. Hoje o `main.py` roda o `yolo11n.pt`
+   genérico, que só detecta "person"/"sports ball" — não sabe o que é uma
+   cesta, nem quem fez. Sem isso, o pipeline IA→gRPC→banco→súmula está
+   pronto mas nunca recebe dado real. Vale colocar essa escolha para o
+   usuário.
+3. Lembrar: `source "$HOME/.cargo/env"` antes de cargo em comandos não
+   interativos; `cargo sqlx prepare` após mudar queries.
