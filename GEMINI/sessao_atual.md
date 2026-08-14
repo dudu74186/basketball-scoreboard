@@ -882,3 +882,69 @@ testada no Windows**.
 3. Avaliar no `COMETAS X CESB`, que não estará no treino.
 4. Lógica de cesta (trajetória cruzando o aro) — lógica temporal, não IA.
 5. Ligar o `main.py` no `ClientePlacar` (gRPC).
+
+---
+
+## 🔁 Sessão 16 (14/08/2026 — sessão Claude Code): fase de IA iniciada — CVAT + primeiro treino
+
+### CVAT instalado e no ar
+
+- Clonado em **`~/ferramentas/cvat`**, FORA do repositório (é ferramenta de
+  trabalho, não produto — seus ~14 serviços poluiriam o compose do projeto).
+- **Conflito de porta resolvido:** o CVAT publica na 8080, mesma do frontend
+  do projeto. Em vez de editar o `docker-compose.yml` deles (que seria
+  desfeito no `git pull`), criado
+  `~/ferramentas/cvat/docker-compose.override.yml` movendo para a **8081**.
+  O `!override` na lista de `ports` é obrigatório: por padrão o Compose
+  **soma** as listas, e sem ele a 8080 continuaria publicada.
+- 14 containers no ar, API respondendo, e o frontend do projeto intacto na
+  8080 (validado).
+- ⏳ **Falta o usuário criar o superusuário** (interativo, envolve senha
+  dele):
+  `docker compose exec cvat_server bash -ic 'python3 ~/manage.py createsuperuser'`
+- Fluxo de anotação documentado em `ia/treino/ANOTACAO.md`.
+
+### Dataset público baixado
+
+- `ia/.env` criado (não existia; o usuário não tinha onde pôr a chave) e
+  `ia/.env.example` ganhou `ROBOFLOW_API_KEY`, que estava documentado no
+  README mas não aparecia no exemplo.
+- **Chave conferida:** está só no `ia/.env` (gitignored), o `.env.example`
+  versionado ficou vazio, e 0 ocorrências no histórico do Git.
+- **Erro meu, corrigido:** o padrão apontava para a **v1** do dataset, com
+  só 499 imagens. A página do Universe mostra o total do *projeto*, não o de
+  cada versão. A **v4** tem 7.486 (6.017 treino / 981 val / 488 teste).
+  Documentado como listar versões antes de baixar.
+- Classes: `ball`, `basket`, `person` — distribuição equilibrada
+  (~4.900 / ~4.800 / ~4.000 caixas). 975 MB, gitignored.
+
+### Primeiro treino em andamento
+
+- **Teste de fumaça antes do treino longo** (2 épocas, 5% dos dados): serve
+  para descobrir que o pipeline quebra em 1 minuto, não depois de horas.
+  Passou.
+- Confirmado de passagem que o bug do `ultralytics` com `project` relativo
+  **ainda existe** (o smoke test caiu em `runs/outputs/treino/smoke`). O
+  `treinar.py` não sofre porque já usa caminho absoluto — mesma correção
+  aplicada no `main.py` na Fase 2.
+- **Treino lançado** com `setsid nohup`, para sobreviver ao fechamento do
+  terminal:
+  - 60 épocas, batch 8, 640px, `yolo11n`
+  - Log: `ia/outputs/treino/treino_bola_aro_v1.log`
+  - Pesos sairão em `ia/outputs/treino/bola_aro_v1/weights/best.pt`
+  - **~4 min/época** (metade do que eu estimara) → ~4h no total
+  - Usa **2,16 GB** dos 4 GB da GTX 1650 — caberia batch 16, mas não vale
+    reiniciar; anotado para o próximo treino.
+
+**Próximos Passos na Retomada:**
+1. Conferir se o treino terminou: `tail` no log e ver se `best.pt` existe.
+2. **Avaliar no vídeo real** — `PESOS=... python avaliar.py`. É o passo que
+   diz o que anotar: o `aro` deveria aparecer em quase todo frame (é fixo na
+   quadra); se não aparecer, o modelo não generalizou para a câmera do
+   usuário.
+3. Anotar os casos difíceis no CVAT e retreinar com os dois datasets
+   juntos (⚠️ nomes e ORDEM das classes precisam bater — os labels YOLO
+   guardam o índice, não o nome).
+4. Depois: lógica de cesta (bola cruzando o aro), e ligar o `main.py` ao
+   `ClientePlacar` (gRPC) — essa alteração no `main.py` **exige autorização
+   explícita** do usuário.
