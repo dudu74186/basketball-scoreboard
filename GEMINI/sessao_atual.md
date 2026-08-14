@@ -4,10 +4,9 @@ Este arquivo documenta o progresso da nossa colaboração, incluindo aulas didá
 
 ---
 
-## 📌 ESTADO ATUAL (ler isto primeiro ao retomar) — atualizado 12/08/2026
+## 📌 ESTADO ATUAL (ler isto primeiro ao retomar) — atualizado 14/08/2026
 
-**Onde paramos:** Fases 0, 1, 2, 3 e **4 concluídas** (4a, 4b e 4c todas
-entregues e validadas). Repositório:
+**Onde paramos:** Fases 0, 1, 2, 3, 4 e **5 concluídas**. Repositório:
 **https://github.com/dudu74186/basketball-scoreboard**.
 
 **O que já funciona de ponta a ponta:**
@@ -24,6 +23,10 @@ entregues e validadas). Repositório:
 - Cliente gRPC em Python (`ia/cliente_placar.py`) testado contra o backend
   containerizado: eventos enviados por streaming aparecem corretamente na
   súmula lida via REST.
+- **Frontend (`frontend/`)**: painel de operação em Vite + React + TS.
+  `npm run dev` sobe em `localhost:5173`. Cadastra times/jogadores, cria
+  partida, registra eventos por clique e mostra placar + súmula (recarregada
+  a cada 3s, para pegar eventos vindos por gRPC). Backend já tem CORS.
 
 ⚠️ **Ao mexer no backend:** `cargo build` exige o banco no ar (macros do
 sqlx validam SQL em tempo de compilação). Se alterar alguma query, rode
@@ -43,9 +46,10 @@ Comandos de execução completos estão no `README.md` da raiz.
 ├── proto/       (placar.proto — contrato gRPC compartilhado IA <-> backend)
 ├── backend/     (Rust — src/{main,erro,modelos,repositorio,grpc}.rs + rotas/,
 │                 build.rs, Dockerfile, .sqlx/ versionado; target/ gitignored)
-├── frontend/    (TS+React — só .gitkeep, Fase 5 ainda não começou)
+├── frontend/    (Vite+React+TS — src/api.ts, src/componentes/, .env.example;
+│                 node_modules/ e dist/ gitignored)
 ├── docker/      (reservado, ainda vazio)
-├── docker-compose.yml  (orquestra só o serviço `db` por enquanto)
+├── docker-compose.yml  (orquestra `db` + `backend`; frontend ainda não)
 ├── .env.example (POSTGRES_USER/PASSWORD/DB) — .env real já existe local, gitignored
 ├── .gitignore, README.md
 ```
@@ -75,19 +79,17 @@ Comandos de execução completos estão no `README.md` da raiz.
    [[linha_do_tempo]] para ser revisitado. **Não "corrigir" por conta
    própria** — foi decisão explícita dele.
 
-**Próximo passo:** **Fase 5 — Frontend Web**, já com as decisões tomadas
-(Vite + React + TypeScript; escopo = painel de teste/operação). O usuário
-pausou ANTES de escrever qualquer código do frontend — a pasta `frontend/`
-segue só com `.gitkeep`. Detalhes e justificativas em [[linha_do_tempo]].
+**Próximo passo:** **Fase 6 — orquestração completa** (containerizar o
+frontend e colocar os 3 serviços no `docker-compose.yml`), ou pular direto
+para a **fase de IA**, cujo plano de ordenação está registrado no fim deste
+[[linha_do_tempo]] (bola+aro -> tracking -> 2x3 por homografia -> OCR por
+último). O usuário demonstrou interesse em partir para o treino do YOLO
+depois da interface.
 
-⚠️ **Primeira coisa a fazer quando a Fase 5 começar:** adicionar `actix-cors`
-ao backend. Sem isso o navegador bloqueia as chamadas do Vite
-(`localhost:5173`) para a API (`localhost:3000`) e nada funciona.
-
-**Depois do frontend:** fase de IA (treino do YOLO), com plano de ordenação
-já definido e registrado em [[linha_do_tempo]] — resumo: bola+aro primeiro,
-depois tracking de jogadores, depois 2x3 pontos por homografia, e OCR de
-número de camisa por último.
+⚠️ **Confirmar com o usuário:** a interface foi validada por build, teste de
+fumaça (SSR) e testes de CORS/API, mas **não foi aberta num navegador real**
+(não havia ferramenta de browser na sessão). Vale perguntar se ficou boa
+visualmente antes de seguir.
 
 **Regras de operação que continuam valendo** (detalhes em [[autorizacoes]] e
 [[funcoes]]): só editar diretamente dentro de `GEMINI/`; nunca editar `.py`
@@ -727,3 +729,71 @@ esta documentação. `frontend/` continua só com `.gitkeep`.
    painel de operação.
 3. Dockerizar o frontend e adicionar ao `docker-compose.yml` (Fase 6).
 4. Só então a fase de IA, na ordem registrada em [[linha_do_tempo]].
+
+---
+
+## 🔁 Sessão 14 (14/08/2026 — sessão Claude Code): Fase 5 — painel de operação
+
+**O que aconteceu:**
+
+1. **CORS resolvido primeiro** (era a pendência que bloqueava tudo, prevista
+   na Sessão 13). `actix-cors` adicionado, com as origens vindas de
+   `CORS_ORIGINS` e **listadas explicitamente** — nunca `*`. Liberar
+   qualquer origem permitiria que qualquer site na internet chamasse a API
+   pelo navegador de quem estivesse logado. Testado nos dois sentidos:
+   `localhost:5173` recebe `access-control-allow-origin`; origem
+   desconhecida leva **400**.
+2. Projeto Vite + React + TS criado em `frontend/`, com:
+   - `src/api.ts` — cliente e tipos espelhando `backend/src/modelos.rs`.
+     Note que `registrarEvento` **não envia `pontos`**, coerente com a regra
+     do servidor.
+   - `src/componentes/PainelCadastro.tsx` (times + jogadores),
+     `PainelPartidas.tsx` (criar/abrir partida),
+     `PainelPlacar.tsx` (botões +2/+3/+1/Falta por jogador, placar e súmula).
+   - `src/index.css` — tokens de cor com tema claro/escuro automático.
+3. **A súmula recarrega a cada 3s.** Motivo: eventos que chegarem por fora
+   da tela — exatamente o caso do serviço de IA gravando via gRPC —
+   aparecem sozinhos. WebSocket seria mais elegante; para um painel de
+   operação, o polling resolve sem complexidade extra. Anotado como
+   melhoria futura possível, não necessária.
+4. O placar de cada time é **somado a partir da súmula**, não guardado —
+   mesma disciplina do backend e do banco.
+
+**Detalhe que travou o build:** o template atual do Vite liga
+`erasableSyntaxOnly` no TypeScript, que **proíbe propriedades declaradas no
+construtor** (`constructor(public status: number)`). Corrigido declarando o
+campo separadamente na classe `ApiError`.
+
+**Correções de documentação feitas de passagem:** o `README.md` ainda dizia
+que o gRPC viria "mais adiante" (já está pronto), que o compose orquestrava
+"só o banco" (já tem a API), e tinha uma seção duplicada de como rodar o
+backend. Os três corrigidos.
+
+**Validação feita:**
+- `tsc -b && vite build` limpo.
+- **Teste de fumaça via SSR**: `renderToString` da árvore de componentes,
+  confirmando que tudo renderiza sem estourar (o `tsc` pega erro de tipo,
+  não erro de execução). Todos os cartões apareceram no HTML.
+- Módulos servidos pelo dev server sem 404.
+- Contratos da API conferidos contra os tipos do frontend.
+
+⚠️ **Limite importante desta validação:** a interface **não foi aberta num
+navegador de verdade** — não havia ferramenta de browser nesta sessão. O
+usuário precisa confirmar visualmente. Se algo estiver errado, será layout
+ou interação, não build nem contrato de API (esses estão verificados).
+
+**Dados de teste:** foram deixados no banco de propósito (2 times, 2
+jogadores, 1 partida), para o usuário abrir a tela e já ver conteúdo.
+Limpar com:
+`docker compose exec db psql -U basquete -d placar_basquete -c "TRUNCATE eventos, partidas, jogadores, times RESTART IDENTITY CASCADE;"`
+
+**Status:** Fase 5 concluída em modo dev. Containerizar o frontend fica
+para a Fase 6.
+
+**Próximos Passos na Retomada:**
+1. Perguntar ao usuário se a interface ficou boa visualmente.
+2. **Fase 6** — containerizar o frontend (build estático + nginx) e colocar
+   os 3 serviços no `docker-compose.yml`.
+3. Ou pular para a **fase de IA** (o usuário demonstrou interesse), seguindo
+   o plano de ordenação no fim de [[linha_do_tempo]]: bola+aro → tracking
+   → 2x3 por homografia → OCR de camisa por último.

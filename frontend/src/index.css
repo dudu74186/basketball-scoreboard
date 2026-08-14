@@ -1,0 +1,360 @@
+/* Tokens de cor definidos uma vez e reaproveitados. Trocar o tema depois
+   vira mexer só aqui, sem caçar cor espalhada pelos componentes. */
+:root {
+  --fundo: #f6f7f9;
+  --superficie: #ffffff;
+  --borda: #dfe3e8;
+  --texto: #1a1d21;
+  --texto-fraco: #626b75;
+  --destaque: #d2691e;
+  --destaque-suave: #fdf1e7;
+  --ok: #1f7a4d;
+  --erro: #b3261e;
+  --erro-suave: #fdecea;
+
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color: var(--texto);
+  background: var(--fundo);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fundo: #16181c;
+    --superficie: #1e2126;
+    --borda: #31363d;
+    --texto: #e8eaed;
+    --texto-fraco: #9aa2ad;
+    --destaque: #f0904a;
+    --destaque-suave: #33261c;
+    --ok: #4ade80;
+    --erro: #f87171;
+    --erro-suave: #3a1f1e;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--fundo);
+  color: var(--texto);
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  font-weight: 600;
+}
+
+/* --- layout --- */
+
+.app {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px 20px 60px;
+}
+
+.cabecalho {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+
+.cabecalho h1 {
+  font-size: 1.4rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.colunas {
+  display: grid;
+  grid-template-columns: minmax(0, 340px) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+@media (max-width: 860px) {
+  .colunas {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.cartao {
+  background: var(--superficie);
+  border: 1px solid var(--borda);
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.cartao h2 {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--texto-fraco);
+  margin-bottom: 12px;
+}
+
+/* --- formulários --- */
+
+.linha-form {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+input,
+select {
+  flex: 1 1 120px;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--borda);
+  border-radius: 6px;
+  background: var(--fundo);
+  color: var(--texto);
+  font-size: 0.9rem;
+  font-family: inherit;
+}
+
+input:focus,
+select:focus {
+  outline: 2px solid var(--destaque);
+  outline-offset: -1px;
+}
+
+button {
+  padding: 8px 14px;
+  border: 1px solid var(--borda);
+  border-radius: 6px;
+  background: var(--superficie);
+  color: var(--texto);
+  font-size: 0.9rem;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+button:hover:not(:disabled) {
+  border-color: var(--destaque);
+  color: var(--destaque);
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+button.primario {
+  background: var(--destaque);
+  border-color: var(--destaque);
+  color: #fff;
+}
+
+button.primario:hover:not(:disabled) {
+  filter: brightness(1.08);
+  color: #fff;
+}
+
+/* --- listas --- */
+
+.lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 0.9rem;
+}
+
+.lista li {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--borda);
+}
+
+.lista li:last-child {
+  border-bottom: none;
+}
+
+.vazio {
+  color: var(--texto-fraco);
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
+/* --- placar / jogadores --- */
+
+.jogador-linha {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--borda);
+  flex-wrap: wrap;
+}
+
+.jogador-linha:last-child {
+  border-bottom: none;
+}
+
+.jogador-nome {
+  flex: 1 1 140px;
+  font-size: 0.95rem;
+}
+
+.camisa {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 6px;
+  border-radius: 6px;
+  background: var(--destaque-suave);
+  color: var(--destaque);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.botoes-evento {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.botoes-evento button {
+  padding: 6px 10px;
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- tabela da súmula --- */
+
+.tabela-wrapper {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--borda);
+}
+
+th {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--texto-fraco);
+  font-weight: 600;
+}
+
+td.numero,
+th.numero {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.total {
+  font-weight: 600;
+  font-size: 1.05rem;
+  color: var(--destaque);
+}
+
+/* --- avisos --- */
+
+.pilula {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  border: 1px solid var(--borda);
+}
+
+.ponto {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--texto-fraco);
+}
+
+.ponto.ok {
+  background: var(--ok);
+}
+
+.ponto.ruim {
+  background: var(--erro);
+}
+
+.alerta {
+  background: var(--erro-suave);
+  border: 1px solid var(--erro);
+  color: var(--erro);
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  margin-bottom: 16px;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+.alerta button {
+  background: transparent;
+  border: none;
+  color: inherit;
+  padding: 0 4px;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.placar-times {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 8px 0 18px;
+}
+
+.placar-time {
+  text-align: center;
+  flex: 1;
+}
+
+.placar-time .nome {
+  font-size: 0.82rem;
+  color: var(--texto-fraco);
+  margin-bottom: 2px;
+}
+
+.placar-time .pontos {
+  font-size: 2.4rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.placar-x {
+  color: var(--texto-fraco);
+  font-size: 0.9rem;
+}

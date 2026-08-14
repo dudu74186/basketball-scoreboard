@@ -231,8 +231,36 @@ Dividida em 3 entregas incrementais. **Entrega 4a concluída em 12/08/2026.**
   testados: jogador inexistente e `tipo` não informado, ambos rejeitados.
 
 ### Fase 5 — Frontend Web
-**Decisões tomadas pelo usuário em 13/08/2026 (ainda NÃO implementado — o
-usuário pediu para pausar antes de começar o código):**
+✅ **Concluída em 14/08/2026** (funcionando em modo dev; containerizar o
+frontend fica para a Fase 6).
+
+**O que foi feito:**
+- `actix-cors` adicionado ao backend — era a pendência que bloqueava tudo.
+  Origens vêm de `CORS_ORIGINS` (padrão `http://localhost:5173`),
+  **listadas explicitamente**, nunca `*`: liberar qualquer origem deixaria
+  qualquer site fazer chamadas à API pelo navegador de quem estivesse
+  logado. Testado que origem não autorizada recebe 400.
+- Projeto Vite + React + TS em `frontend/`, com:
+  - `src/api.ts` — cliente e tipos espelhando `backend/src/modelos.rs`.
+  - `src/componentes/` — `PainelCadastro`, `PainelPartidas`, `PainelPlacar`.
+  - `src/index.css` — tokens de cor com suporte a tema claro/escuro.
+- A súmula recarrega a cada 3s, para eventos que chegarem por gRPC (do
+  serviço de IA) aparecerem sozinhos na tela. WebSocket seria mais elegante
+  — anotado como melhoria possível, não necessária para um painel de
+  operação.
+- Detalhe que travou o build: o template novo do Vite liga
+  `erasableSyntaxOnly`, que **proíbe propriedades declaradas no construtor**
+  (`constructor(public status: number)`). Resolvido declarando o campo
+  separadamente.
+- Validação feita: `tsc -b && vite build` limpo; teste de fumaça via SSR
+  (`renderToString`) confirmando que a árvore de componentes renderiza sem
+  erro; CORS testado nas duas direções; contratos da API conferidos contra
+  os tipos do frontend.
+  ⚠️ **A interface não foi aberta num navegador de verdade** — não havia
+  ferramenta de browser nesta sessão. O usuário precisa confirmar
+  visualmente.
+
+**Decisões tomadas pelo usuário em 13/08/2026:**
 - Ferramenta: **Vite + React + TypeScript** (SPA). Escolhido em vez de
   Next.js porque o backend já é o Rust — recursos de servidor do Next não
   seriam usados.
@@ -245,10 +273,7 @@ usuário pediu para pausar antes de começar o código):**
   operação já é isso. Construir a IA antes significaria depurá-la no
   terminal lendo JSON.
 
-⚠️ **Pendência técnica prevista:** o backend ainda **não tem CORS
-configurado**. O navegador vai bloquear as chamadas de `localhost:5173`
-(Vite) para `localhost:3000` (API). Será preciso adicionar `actix-cors` ao
-backend antes do frontend funcionar.
+~~⚠️ Pendência: backend sem CORS~~ — resolvida em 14/08/2026.
 
 ### Fase 6 — Orquestração via Docker Compose
 - `docker-compose.yml` único subindo IA + backend + frontend + banco.

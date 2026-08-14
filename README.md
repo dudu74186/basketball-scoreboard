@@ -14,8 +14,8 @@ CI/CD e segurança aplicada.
 | Camada | Diretório | Linguagem/Stack |
 |---|---|---|
 | Visão computacional / IA | `ia/` | Python + YOLOv11 (Ultralytics) |
-| Backend / API | `backend/` | Rust + actix-web, `sqlx` para o banco (gRPC via `tonic` mais adiante) |
-| Frontend Web | `frontend/` | TypeScript + React |
+| Backend / API | `backend/` | Rust + actix-web, `sqlx` para o banco, `tonic` para gRPC |
+| Frontend Web | `frontend/` | TypeScript + React (Vite) |
 | Banco de dados | `db/` | PostgreSQL (container Docker, acesso via `sqlx` no backend) |
 | Orquestração | `docker-compose.yml` | Docker + Docker Compose |
 | App Android (futuro) | `mobile/` | Kotlin nativo |
@@ -41,12 +41,15 @@ entre ambientes Linux e Windows.
 ├── backend/        # API em Rust + actix-web
 │   ├── src/main.rs
 │   └── Cargo.toml  # Cargo.lock é versionado (é uma aplicação, não lib)
-├── frontend/       # Web em TypeScript + React (ainda vazio — Fase 5)
+├── frontend/       # Painel de operação (Vite + React + TypeScript)
+│   └── src/
+│       ├── api.ts        # Cliente da API + tipos espelhando o backend
+│       └── componentes/  # PainelCadastro, PainelPartidas, PainelPlacar
 ├── db/             # Schema e migrations do PostgreSQL
 │   ├── migrations/ # Arquivos .sql numerados (compatíveis com sqlx-cli)
 │   └── README.md
 ├── docker/         # (reservado para configs de orquestração — vazio por enquanto)
-└── docker-compose.yml  # Orquestração dos serviços (hoje só o banco)
+└── docker-compose.yml  # Orquestração dos serviços (banco + API)
 ```
 
 Arquivos pesados (vídeos, pesos de modelo, saídas de inferência) ficam fora do
@@ -73,15 +76,6 @@ saudável (`depends_on: condition: service_healthy`).
 Schema e decisões de modelagem documentados em `db/README.md`.
 
 ### Backend / API
-
-Requer o banco rodando (passo acima) e o toolchain do Rust
-([rustup](https://rustup.rs)).
-
-```bash
-cd backend/
-cp .env.example .env   # e ajuste DATABASE_URL com as credenciais do .env da raiz
-cargo run
-```
 
 Endpoints disponíveis:
 
@@ -110,6 +104,8 @@ detalhe apenas no log do servidor).
 
 #### Rodando o backend localmente (sem Docker)
 
+Requer o toolchain do Rust ([rustup](https://rustup.rs)).
+
 ```bash
 cd backend/
 cp .env.example .env   # ajuste DATABASE_URL com as credenciais do .env da raiz
@@ -120,6 +116,29 @@ cargo run
 `cargo build` precisa do banco no ar (`docker compose up -d db`). Se alterar
 alguma query, rode `cargo sqlx prepare` para atualizar o cache em
 `backend/.sqlx/` — é ele que permite compilar sem banco dentro do Docker.
+
+### Frontend — painel de operação
+
+Requer a stack no ar (passo acima).
+
+```bash
+cd frontend/
+npm install
+cp .env.example .env
+npm run dev          # abre em http://localhost:5173
+```
+
+Numa tela só: cadastrar times e jogadores, criar partida, registrar
+cesta/lance livre/falta com um clique e acompanhar placar e súmula. É a
+ferramenta de teste da API — e será a de validação da IA, quando ela
+começar a detectar eventos sozinha.
+
+A súmula se recarrega a cada 3s, então eventos que chegarem por fora da
+tela (via gRPC, vindos do serviço de IA) aparecem sozinhos.
+
+⚠️ O backend só aceita chamadas do navegador vindas das origens listadas em
+`CORS_ORIGINS` (padrão: `http://localhost:5173`). Se rodar o Vite em outra
+porta, ajuste essa variável no `docker-compose.yml`.
 
 ### Comunicação IA → API (gRPC)
 

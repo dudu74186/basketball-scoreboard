@@ -1,4 +1,5 @@
-use actix_web::{get, web, App, HttpResponse, HttpServer, Responder};
+use actix_cors::Cors;
+use actix_web::{get, http::header, web, App, HttpResponse, HttpServer, Responder};
 use sqlx::postgres::PgPoolOptions;
 use sqlx::PgPool;
 
@@ -70,6 +71,15 @@ async fn main() -> std::io::Result<()> {
     let grpc_addr = std::env::var("GRPC_ADDR").unwrap_or_else(|_| "127.0.0.1:50051".to_string());
     grpc::iniciar(pool.clone(), grpc_addr);
 
+    // Origens autorizadas a chamar a API pelo navegador. Sem isto, o
+    // frontend do Vite (porta 5173) é bloqueado pela política de mesma
+    // origem. Listadas explicitamente de propósito: liberar qualquer origem
+    // ("*") permitiria que qualquer site na internet fizesse chamadas à API
+    // usando o navegador de quem estivesse logado.
+    let origens_cors = std::env::var("CORS_ORIGINS")
+        .unwrap_or_else(|_| "http://localhost:5173,http://127.0.0.1:5173".to_string());
+    log::info!("origens CORS permitidas: {origens_cors}");
+
     log::info!("API ouvindo em http://{bind_addr}");
 
     HttpServer::new(move || {
@@ -80,7 +90,16 @@ async fn main() -> std::io::Result<()> {
             erro::ApiError::RequisicaoInvalida(err.to_string()).into()
         });
 
+        let mut cors = Cors::default()
+            .allowed_methods(vec!["GET", "POST"])
+            .allowed_headers(vec![header::CONTENT_TYPE])
+            .max_age(3600);
+        for origem in origens_cors.split(',').map(str::trim).filter(|o| !o.is_empty()) {
+            cors = cors.allowed_origin(origem);
+        }
+
         App::new()
+            .wrap(cors)
             // O pool é compartilhado entre todos os workers do actix; o
             // clone aqui é barato (é um ponteiro contado, não copia o pool).
             .app_data(web::Data::new(pool.clone()))
