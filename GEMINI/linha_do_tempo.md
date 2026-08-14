@@ -372,6 +372,55 @@ fecha um ciclo funcionando mais cedo:
 **(a) + (b) já entregam uma súmula automática funcionando** — só depois
 disso vale investir nas partes difíceis.
 
+### Andamento (14/08/2026)
+
+**Decisão do usuário: dataset híbrido.** Treinar primeiro com dado público,
+ver onde o modelo erra nos vídeos reais dele, e só então anotar os casos
+difíceis — em vez de anotar às cegas.
+
+**Infraestrutura de treino criada em `ia/treino/`:**
+- `baixar_dataset.py` — baixa dataset público do Roboflow Universe
+  (padrão: `computer-vision-d5fjh/basketball-detection-dn6fg`, ~4.900
+  imagens com pessoa/bola/aro). Configurável por
+  `RF_WORKSPACE`/`RF_PROJETO`/`RF_VERSAO`.
+- `treinar.py` — padrões calibrados para a GTX 1650: `yolo11n`, 640px,
+  batch 8, precisão mista (`amp`), early stopping.
+- `avaliar.py` — roda o modelo no vídeo real e resume detecções por classe.
+  **É o passo que orienta o que anotar depois**: as métricas do treino falam
+  do dataset público (outra quadra, outra câmera), não do vídeo do usuário.
+- `_ambiente.py` — carrega `ia/.env`. Sem isso, a instrução do README de pôr
+  a chave no `.env` não funcionaria (os scripts só liam variáveis do shell).
+- ⏳ **Bloqueado até o usuário criar conta no Roboflow** e pôr
+  `ROBOFLOW_API_KEY` em `ia/.env`. A API do Universe exige chave.
+
+**Decisão: usar CVAT para anotação, em vez de construir ferramenta própria.**
+O usuário pediu uma ferramenta de anotação no frontend, com pré-marcação da
+IA. Levantei que o [CVAT](https://www.cvat.ai/) já faz isso melhor:
+- **Interpolação entre keyframes** — o aro é fixo na quadra, então marca-se
+  em dois frames e ele preenche o resto (60–80% menos trabalho). Uma
+  ferramenta nossa exigiria frame a frame.
+- **Auto-anotação nativa com YOLO da Ultralytics** — a pré-marcação pedida,
+  pronta.
+- Self-hosted por Docker Compose, coerente com o ambiente do projeto.
+
+O usuário escolheu **"CVAT agora + tela de revisão depois"**: anota já com o
+CVAT, e o frontend ganha depois a tela de **revisão de eventos detectados**
+(vídeo com as caixas da IA + confirmar/corrigir a súmula) — que é a parte
+específica deste projeto, que o CVAT não cobre.
+
+**CVAT instalado fora do repositório**, em `~/ferramentas/cvat` (é
+ferramenta, não produto). Conflito de porta resolvido: o CVAT publica na
+8080, mesma do frontend, então um `docker-compose.override.yml` local o move
+para a **8081**. O `!override` na lista de `ports` é obrigatório — sem ele o
+Compose soma as listas e a 8080 continuaria publicada. Fluxo completo
+documentado em `ia/treino/ANOTACAO.md`.
+
+**Também levantado ao usuário:** o Colab free tem T4 com **16 GB** de VRAM
+(4x a GTX 1650), grátis, 15–30h/semana, sessões de até 12h — permitiria
+treinar `yolo11s`/`m` em vez do `nano`. Recomendação dada: começar local
+(evita subir dados) e migrar para o Colab se ficar lento ou se quiser
+modelo maior. Nenhuma decisão tomada ainda.
+
 **Dois pontos práticos levantados:**
 1. **O gargalo real é o dataset, não o treino.** Anotar bola/aro em
    milhares de frames à mão é inviável. Procurar dataset público de
