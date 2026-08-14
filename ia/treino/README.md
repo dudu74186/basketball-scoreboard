@@ -97,3 +97,30 @@ de jogadores → 2 ou 3 pontos por homografia → número de camisa (OCR) por
 
 `ia/datasets/` (milhares de imagens, rebaixáveis) e os pesos `.pt` gerados.
 Ver `.gitignore` na raiz.
+
+## Acompanhar um treino em andamento
+
+```bash
+cd ia/treino/
+python status.py
+```
+
+Mostra se o processo está vivo, quantas épocas faltam, o tempo estimado e a
+evolução do mAP50. O que interessa olhar é se o mAP50 **ainda está subindo**:
+se estagnou, o early stopping encerra sozinho e não adianta esperar mais.
+
+Outras formas, se quiser o detalhe cru:
+
+| Comando | Para quê |
+|---|---|
+| `tail -f ../outputs/treino/treino_bola_aro_v1.log` | Barra de progresso ao vivo, batch a batch |
+| `column -s, -t ../outputs/treino/bola_aro_v1/results.csv \| less -S` | Todas as métricas, época a época |
+| `nvidia-smi -l 5` | Uso da GPU, atualizando a cada 5s |
+| `xdg-open ../outputs/treino/bola_aro_v1/results.png` | Gráficos das curvas (gerado ao final) |
+
+**Os pesos são salvos a cada época** em `weights/best.pt`, então dá para
+avaliar um modelo parcial sem esperar o treino inteiro:
+
+```bash
+PESOS=../outputs/treino/bola_aro_v1/weights/best.pt python avaliar.py
+```
