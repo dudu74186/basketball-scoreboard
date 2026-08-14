@@ -30,7 +30,13 @@ DESTINO = Path(__file__).resolve().parent.parent / "datasets"
 #   https://universe.roboflow.com/<WORKSPACE>/<PROJETO>/dataset/<VERSAO>
 WORKSPACE = os.environ.get("RF_WORKSPACE", "computer-vision-d5fjh")
 PROJETO = os.environ.get("RF_PROJETO", "basketball-detection-dn6fg")
-VERSAO = int(os.environ.get("RF_VERSAO", "1"))
+# v4 é a maior deste projeto: 7.486 imagens (6.017 de treino), contra apenas
+# 499 da v1. Um projeto do Roboflow costuma ter várias versões, e a página
+# do Universe mostra o total do projeto, não o de cada versão — vale sempre
+# conferir antes de baixar. Para listar as versões disponíveis:
+#     p = rf.workspace(WORKSPACE).project(PROJETO)
+#     for v in p.versions(): print(v.id, v.images)
+VERSAO = int(os.environ.get("RF_VERSAO", "4"))
 
 # "yolov11" entrega o formato que o ultralytics espera: imagens + labels em
 # .txt normalizados, já divididos em train/valid/test, com um data.yaml.

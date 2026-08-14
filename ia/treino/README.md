@@ -33,9 +33,23 @@ ROBOFLOW_API_KEY=sua-chave-aqui
 python baixar_dataset.py
 ```
 
-Padrão: [`computer-vision-d5fjh/basketball-detection-dn6fg`](https://universe.roboflow.com/computer-vision-d5fjh/basketball-detection-dn6fg)
-(~4.900 imagens, classes de pessoa, bola e aro). Para usar outro, basta
-ajustar as variáveis — o endereço de qualquer dataset do Universe segue
+Padrão: [`computer-vision-d5fjh/basketball-detection-dn6fg`](https://universe.roboflow.com/computer-vision-d5fjh/basketball-detection-dn6fg),
+**versão 4** — 7.486 imagens (6.017 treino / 981 validação / 488 teste),
+classes `ball`, `basket` e `person`, distribuição equilibrada
+(~4.900 / ~4.800 / ~4.000 caixas).
+
+> ⚠️ **Confira a versão antes de baixar.** Um projeto do Roboflow tem
+> várias versões, e a página do Universe mostra o total do *projeto*, não o
+> de cada versão. A v1 deste dataset tem só **499** imagens — 15x menos que
+> a v4. Para listar as versões:
+>
+> ```python
+> p = rf.workspace(WORKSPACE).project(PROJETO)
+> for v in p.versions(): print(v.id, v.images)
+> ```
+
+Para usar outro dataset, basta ajustar as variáveis — o endereço de
+qualquer dataset do Universe segue
 `universe.roboflow.com/<WORKSPACE>/<PROJETO>/dataset/<VERSAO>`:
 
 ```bash
