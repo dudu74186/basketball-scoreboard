@@ -1,0 +1,8 @@
+# node_modules é reinstalado dentro da imagem (npm ci) e pesa centenas de MB:
+# enviá-lo como contexto seria lento e inútil.
+node_modules/
+dist/
+
+# Configuração local nunca entra na imagem.
+.env
+.env.local

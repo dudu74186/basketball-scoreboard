@@ -51,5 +51,19 @@ services:
       - "3000:3000"      # API REST
       - "50051:50051"    # gRPC (usado pelo serviço de IA)
 
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # Caminho relativo: o navegador chama o próprio domínio do frontend
+        # e o nginx repassa para o backend. Ver frontend/nginx.conf.
+        VITE_API_URL: /api
+    container_name: basketball-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "8080:8080"
+
 volumes:
   db_data:

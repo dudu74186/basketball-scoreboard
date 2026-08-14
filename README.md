@@ -42,6 +42,8 @@ entre ambientes Linux e Windows.
 │   ├── src/main.rs
 │   └── Cargo.toml  # Cargo.lock é versionado (é uma aplicação, não lib)
 ├── frontend/       # Painel de operação (Vite + React + TypeScript)
+│   ├── Dockerfile  # build estático + nginx (não-root)
+│   ├── nginx.conf  # SPA fallback + proxy /api -> backend
 │   └── src/
 │       ├── api.ts        # Cliente da API + tipos espelhando o backend
 │       └── componentes/  # PainelCadastro, PainelPartidas, PainelPlacar
@@ -49,7 +51,7 @@ entre ambientes Linux e Windows.
 │   ├── migrations/ # Arquivos .sql numerados (compatíveis com sqlx-cli)
 │   └── README.md
 ├── docker/         # (reservado para configs de orquestração — vazio por enquanto)
-└── docker-compose.yml  # Orquestração dos serviços (banco + API)
+└── docker-compose.yml  # Orquestração dos 3 serviços (banco + API + frontend)
 ```
 
 Arquivos pesados (vídeos, pesos de modelo, saídas de inferência) ficam fora do
@@ -62,16 +64,29 @@ pendências no diário de bordo do projeto.
 
 ## Como rodar (por enquanto)
 
-### Stack completa (banco + API)
+### Stack completa (banco + API + frontend)
 
 ```bash
 cp .env.example .env   # e troque a senha
 docker compose up -d
-curl localhost:3000/health
 ```
 
-Sobe o PostgreSQL e a API juntos. A API só inicia depois que o banco fica
-saudável (`depends_on: condition: service_healthy`).
+Sobe os três serviços. Depois disso:
+
+| Endereço | O que é |
+|---|---|
+| http://localhost:8080 | Painel de operação (frontend) |
+| http://localhost:8080/api/health | API, servida pelo mesmo domínio |
+| http://localhost:3000 | API direta (útil para `curl`) |
+| `localhost:50051` | gRPC, usado pelo serviço de IA |
+
+A API só inicia depois que o banco fica saudável
+(`depends_on: condition: service_healthy`).
+
+O nginx do frontend serve os arquivos estáticos **e** faz proxy de `/api`
+para o backend. Por isso o painel funciona igual acessado de outra máquina
+da rede (`http://IP-DA-MAQUINA:8080`) — o navegador nunca precisa saber o
+endereço da API, e não há CORS envolvido, por ser tudo a mesma origem.
 
 Schema e decisões de modelagem documentados em `db/README.md`.
 

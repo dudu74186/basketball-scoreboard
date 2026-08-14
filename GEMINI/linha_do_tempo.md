@@ -276,8 +276,45 @@ frontend fica para a Fase 6).
 ~~⚠️ Pendência: backend sem CORS~~ — resolvida em 14/08/2026.
 
 ### Fase 6 — Orquestração via Docker Compose
-- `docker-compose.yml` único subindo IA + backend + frontend + banco.
-- Paridade Linux/Windows validada (o mesmo compose funciona nos dois SOs).
+✅ **Concluída em 14/08/2026** para banco + backend + frontend.
+(O serviço de IA continua fora do compose de propósito — ver nota no fim.)
+
+- `frontend/Dockerfile` multi-stage: `node:22-alpine` builda os estáticos,
+  `nginxinc/nginx-unprivileged:1.27-alpine` serve. **75 MB** finais, sem
+  Node nem código-fonte na imagem, rodando como **uid 101 (não-root)**.
+- `npm ci` (não `install`) no build: instala exatamente o que está no
+  `package-lock.json`, tornando o build reproduzível.
+- **`frontend/nginx.conf` faz duas coisas importantes:**
+  1. **Fallback de SPA** (`try_files ... /index.html`) — sem isso,
+     recarregar a página numa rota interna do React daria 404.
+  2. **Proxy de `/api/` para `http://backend:3000/`** (a barra final é o
+     que remove o prefixo: `/api/times` chega como `/times`).
+- **Por que o proxy, e não chamar `localhost:3000` direto:** o Vite injeta
+  as variáveis `VITE_*` em **tempo de build**, não de execução. Cravar
+  `http://localhost:3000` na imagem faria o painel funcionar só na própria
+  máquina — quebraria acessado do PC Windows ou do celular. Com o proxy, o
+  navegador chama o próprio domínio (`/api`), e **não há CORS envolvido**
+  por ser mesma origem. `VITE_API_URL` entra como `ARG` do Dockerfile,
+  com padrão `/api`.
+- Validado de ponta a ponta:
+  - Os 3 containers sobem juntos com `docker compose up -d`.
+  - Bundle contém `` `/api` `` e **zero** ocorrências de `localhost:3000`.
+  - Fluxo completo (criar time/jogador, erro 404) funcionando pelo proxy.
+  - SPA fallback: rota inexistente devolve 200 com o index.
+  - `id` no container confirma uid 101.
+  - **Teste decisivo:** acesso por `http://192.168.3.63:8080` (IP da rede)
+    funciona. Já a API direta em `:3000`, chamada com `Origin` desse IP,
+    responde 200 mas **sem** `access-control-allow-origin` — ou seja, o
+    navegador descartaria a resposta. É exatamente o problema que o proxy
+    evita.
+- ⏳ Paridade Linux/Windows: o compose está pronto para isso, mas **não foi
+  testado no Windows** ainda.
+
+**Nota — por que a IA não está no compose:** o serviço de `ia/` é um job de
+processamento em lote (roda, processa um vídeo, termina), não um servidor
+que fica no ar. Além disso, exige `--gpus all` e volumes de mídia pesada.
+Colocá-lo no compose como serviço de longa duração não faria sentido hoje.
+Reavaliar quando a IA virar um consumidor contínuo de stream da câmera.
 
 ### Fase 7 — Segurança aplicada (estudo prático, transversal)
 - **Dívida de segurança já identificada e aceita conscientemente pelo

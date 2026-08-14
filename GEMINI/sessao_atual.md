@@ -4,9 +4,9 @@ Este arquivo documenta o progresso da nossa colaboração, incluindo aulas didá
 
 ---
 
-## 📌 ESTADO ATUAL (ler isto primeiro ao retomar) — atualizado 14/08/2026
+## 📌 ESTADO ATUAL (ler isto primeiro ao retomar) — atualizado 14/08/2026 (sessão 15)
 
-**Onde paramos:** Fases 0, 1, 2, 3, 4 e **5 concluídas**. Repositório:
+**Onde paramos:** Fases 0, 1, 2, 3, 4, 5 e **6 concluídas**. Repositório:
 **https://github.com/dudu74186/basketball-scoreboard**.
 
 **O que já funciona de ponta a ponta:**
@@ -24,9 +24,15 @@ Este arquivo documenta o progresso da nossa colaboração, incluindo aulas didá
   containerizado: eventos enviados por streaming aparecem corretamente na
   súmula lida via REST.
 - **Frontend (`frontend/`)**: painel de operação em Vite + React + TS.
-  `npm run dev` sobe em `localhost:5173`. Cadastra times/jogadores, cria
-  partida, registra eventos por clique e mostra placar + súmula (recarregada
-  a cada 3s, para pegar eventos vindos por gRPC). Backend já tem CORS.
+  Cadastra times/jogadores, cria partida, registra eventos por clique e
+  mostra placar + súmula (recarregada a cada 3s, para pegar eventos vindos
+  por gRPC).
+- **`docker compose up -d` sobe os 3 serviços.** Painel em
+  **http://localhost:8080**, com o nginx servindo os estáticos e fazendo
+  proxy de `/api` para o backend — funciona igual acessado pelo IP da rede
+  (testado em `192.168.3.63:8080`), sem CORS por ser mesma origem.
+  Para desenvolver com hot reload, `npm run dev` em `frontend/` continua
+  valendo (aí sim usa CORS, origem `localhost:5173`).
 
 ⚠️ **Ao mexer no backend:** `cargo build` exige o banco no ar (macros do
 sqlx validam SQL em tempo de compilação). Se alterar alguma query, rode
@@ -46,10 +52,11 @@ Comandos de execução completos estão no `README.md` da raiz.
 ├── proto/       (placar.proto — contrato gRPC compartilhado IA <-> backend)
 ├── backend/     (Rust — src/{main,erro,modelos,repositorio,grpc}.rs + rotas/,
 │                 build.rs, Dockerfile, .sqlx/ versionado; target/ gitignored)
-├── frontend/    (Vite+React+TS — src/api.ts, src/componentes/, .env.example;
-│                 node_modules/ e dist/ gitignored)
+├── frontend/    (Vite+React+TS — src/api.ts, src/componentes/, Dockerfile,
+│                 nginx.conf; node_modules/ e dist/ gitignored)
 ├── docker/      (reservado, ainda vazio)
-├── docker-compose.yml  (orquestra `db` + `backend`; frontend ainda não)
+├── docker-compose.yml  (orquestra db + backend + frontend; a IA fica fora,
+│                       por ser job em lote com GPU — ver nota na Fase 6)
 ├── .env.example (POSTGRES_USER/PASSWORD/DB) — .env real já existe local, gitignored
 ├── .gitignore, README.md
 ```
@@ -79,17 +86,26 @@ Comandos de execução completos estão no `README.md` da raiz.
    [[linha_do_tempo]] para ser revisitado. **Não "corrigir" por conta
    própria** — foi decisão explícita dele.
 
-**Próximo passo:** **Fase 6 — orquestração completa** (containerizar o
-frontend e colocar os 3 serviços no `docker-compose.yml`), ou pular direto
-para a **fase de IA**, cujo plano de ordenação está registrado no fim deste
-[[linha_do_tempo]] (bola+aro -> tracking -> 2x3 por homografia -> OCR por
-último). O usuário demonstrou interesse em partir para o treino do YOLO
-depois da interface.
+**Próximo passo — combinado com o usuário:** iniciar a **fase de IA**, com
+**dataset híbrido** (escolha explícita dele em 14/08/2026): começar de um
+dataset público de basquete (Roboflow Universe tem vários com bola/aro/
+jogador anotados), treinar, ver onde o modelo erra nos vídeos reais dele, e
+só então anotar os casos difíceis — em vez de anotar às cegas.
 
-⚠️ **Confirmar com o usuário:** a interface foi validada por build, teste de
-fumaça (SSR) e testes de CORS/API, mas **não foi aberta num navegador real**
-(não havia ferramenta de browser na sessão). Vale perguntar se ficou boa
-visualmente antes de seguir.
+Ordem da fase de IA (detalhada no fim de [[linha_do_tempo]]):
+bola+aro → tracking de jogadores → 2x3 pontos por homografia → OCR de
+camisa por último.
+
+Primeiros passos concretos quando retomar:
+1. Escolher/baixar o dataset público de bola+aro.
+2. Montar `data.yaml` e script de treino em `ia/` (`yolo11n`, 640px, batch
+   pequeno — limite dos 4 GB da GTX 1650).
+3. Avaliar no vídeo real `COMETAS X CESB` (que não estará no treino).
+4. Lógica de cesta (bola cruzando o aro de cima para baixo) — não é IA, é
+   lógica temporal, e costuma ser subestimada (falso positivo com rebote,
+   bola passando na frente do aro, tabela).
+5. Ligar no gRPC: hoje o `main.py` só salva vídeo anotado, precisa passar a
+   chamar o `ClientePlacar` ao detectar cesta.
 
 **Regras de operação que continuam valendo** (detalhes em [[autorizacoes]] e
 [[funcoes]]): só editar diretamente dentro de `GEMINI/`; nunca editar `.py`
@@ -797,3 +813,72 @@ para a Fase 6.
 3. Ou pular para a **fase de IA** (o usuário demonstrou interesse), seguindo
    o plano de ordenação no fim de [[linha_do_tempo]]: bola+aro → tracking
    → 2x3 por homografia → OCR de camisa por último.
+
+---
+
+## 🔁 Sessão 15 (14/08/2026 — sessão Claude Code): Fase 6 — orquestração completa
+
+**Contexto:** usuário confirmou que o frontend ficou bom, decidiu fazer o
+**dataset híbrido** na fase de IA, mas pediu para fazer a Fase 6 antes.
+
+**O que foi feito:**
+
+1. `frontend/Dockerfile` multi-stage — `node:22-alpine` builda,
+   `nginxinc/nginx-unprivileged:1.27-alpine` serve. **75 MB** finais,
+   **uid 101 (não-root)**, sem Node nem código-fonte na imagem final.
+   `npm ci` em vez de `install`, para build reproduzível a partir do lock.
+2. `frontend/nginx.conf` com fallback de SPA e proxy `/api/` →
+   `http://backend:3000/`.
+3. `frontend/.dockerignore` (node_modules pesa centenas de MB e é
+   reinstalado dentro da imagem).
+4. Serviço `frontend` no `docker-compose.yml`, porta 8080.
+
+### A decisão central desta sessão (vale entender)
+
+**Problema:** o Vite injeta `VITE_*` em **tempo de build**, não de execução.
+Cravar `VITE_API_URL=http://localhost:3000` na imagem faria o painel
+funcionar só na própria máquina — quebraria acessado do PC Windows ou do
+celular, que é justamente um objetivo do projeto.
+
+**Solução:** o nginx serve os estáticos **e** faz proxy da API no mesmo
+domínio. O bundle usa `/api` (relativo), então o navegador chama sempre o
+próprio host de onde carregou a página. Dois ganhos:
+- Funciona de qualquer máquina da rede sem reconfigurar nada.
+- **CORS deixa de existir** nesse caminho (mesma origem). O `actix-cors`
+  continua necessário só para o modo dev (Vite em `localhost:5173`).
+
+`VITE_API_URL` entra como `ARG` do Dockerfile, com padrão `/api`.
+
+### Validações feitas
+
+- 3 containers sobem juntos com `docker compose up -d`.
+- Bundle contém `` `/api` `` e **0 ocorrências** de `localhost:3000` —
+  confirmado inspecionando o JS servido.
+- Fluxo completo pelo proxy (criar time, criar jogador, erro 404 correto).
+- SPA fallback: `/partida/1/ao-vivo` devolve 200 com o index.
+- `docker compose exec frontend id` → `uid=101(nginx)`.
+- **Teste decisivo:** `http://192.168.3.63:8080` (IP da rede) funciona.
+  Em contraste, a API direta em `:3000` com `Origin` desse IP responde 200
+  **sem** `access-control-allow-origin` — o navegador descartaria. Nuance
+  importante: o servidor não bloqueia, quem bloqueia é o navegador; um
+  `curl` retornando 200 não prova que funciona no browser.
+
+### Decisão registrada: a IA não entra no compose
+
+O serviço de `ia/` é **job em lote** (processa um vídeo e termina), não um
+servidor de longa duração, e exige `--gpus all` + volumes de mídia pesada.
+Colocá-lo como serviço do compose não faria sentido hoje. Reavaliar quando
+a IA virar consumidora contínua de stream da câmera.
+
+**Pendência:** paridade Linux/Windows está pronta no compose mas **não foi
+testada no Windows**.
+
+**Status:** Fase 6 concluída.
+
+**Próximos Passos na Retomada — fase de IA, dataset híbrido:**
+1. Escolher/baixar dataset público de bola+aro (Roboflow Universe).
+2. `data.yaml` + script de treino em `ia/` (`yolo11n`, 640px, batch pequeno
+   pelos 4 GB da GTX 1650).
+3. Avaliar no `COMETAS X CESB`, que não estará no treino.
+4. Lógica de cesta (trajetória cruzando o aro) — lógica temporal, não IA.
+5. Ligar o `main.py` no `ClientePlacar` (gRPC).
