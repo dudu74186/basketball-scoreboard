@@ -5,6 +5,9 @@
 *.pt
 *.onnx
 runs/
+# Datasets de treino: milhares de imagens, rebaixáveis com
+# ia/treino/baixar_dataset.py.
+datasets/
 
 # --- Python ---
 __pycache__/
