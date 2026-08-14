@@ -102,11 +102,22 @@ Ver `.gitignore` na raiz.
 
 ```bash
 cd ia/treino/
-python status.py
+python status.py          # imprime uma vez
+python status.py -w       # fica atualizando até o treino acabar
+python status.py -w -n 30 # atualizando a cada 30s (padrão: 15s)
+python status.py --linha  # uma linha só, para tmux/polybar/i3blocks
 ```
 
 Mostra se o processo está vivo, quantas épocas faltam, o tempo estimado e a
-evolução do mAP50. O que interessa olhar é se o mAP50 **ainda está subindo**:
+evolução do mAP50. No modo `-w` o painel é redesenhado no lugar, sem
+empilhar; `Ctrl+C` sai do monitor **sem parar o treino**, que roda em outro
+processo. Quando o treino termina, o monitor percebe e encerra sozinho.
+
+Exemplo do modo `--linha`, para colar numa barra de status:
+
+```
+🏀 2/60 · mAP50 0.919 · 4:12:34
+``` O que interessa olhar é se o mAP50 **ainda está subindo**:
 se estagnou, o early stopping encerra sozinho e não adianta esperar mais.
 
 Outras formas, se quiser o detalhe cru:
