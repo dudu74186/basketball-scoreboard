@@ -85,9 +85,9 @@ no diário do projeto. Se quiser já deixar criadas, não atrapalha.)
 
 **4. Criar uma tarefa** e subir o vídeo. Os vídeos do projeto estão em:
 
-- `ia/samples/teste.mp4` — curto, bom para começar
-- `COMETAS X CESB - RODADA 16 - LCB 2021.mp4` (na raiz de
-  `~/Documentos/Python`) — jogo real completo
+- `ia/samples/teste.mp4` — curto (848x480), bom para começar
+- `ia/samples/circuito_capixaba_final_bronze.mp4` — jogo completo em
+  **1920x1080**, 1h53min. É o vídeo de referência do projeto.
 
 Dica: use **frame step** (ex.: 1 a cada 10) ao criar a tarefa. Frames
 consecutivos são quase idênticos e não agregam ao treino — só dão trabalho.

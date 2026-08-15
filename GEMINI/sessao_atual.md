@@ -948,3 +948,79 @@ testada no Windows**.
 4. Depois: lógica de cesta (bola cruzando o aro), e ligar o `main.py` ao
    `ClientePlacar` (gRPC) — essa alteração no `main.py` **exige autorização
    explícita** do usuário.
+
+---
+
+## 🔁 Sessão 17 (15/08/2026 — sessão Claude Code): correções aplicadas e troca do vídeo de referência
+
+### Recomendações do diagnóstico, aplicadas
+
+Criado **`ia/deteccao.py`** (na raiz de `ia/`, não em `treino/`) para que a
+avaliação meça exatamente as regras que a inferência vai aplicar. Contém:
+
+1. **Filtro do placar** — descarta detecções de `ball` nos 15% superiores do
+   quadro. Base: 67,6% de todas as detecções de bola no jogo inteiro caíam
+   nessa faixa, e eram o overlay do placar. Configurável por
+   `FAIXA_PLACAR` (0 desliga, para vídeo sem overlay).
+2. **`IMGSZ=1280`** — inferência em resolução maior que a do vídeo. Medido:
+
+   | imgsz | % frames c/ bola | % frames c/ aro | aros/frame |
+   |---|---|---|---|
+   | 640 | 4,0% | 90,7% | 1,00 |
+   | 960 | 5,2% | 92,7% | **1,76** (duplicando) |
+   | 1280 | **6,3%** | 91,8% | 1,03 |
+
+   O upscale dá mais pixels ao objeto pequeno. Custa ~2x o tempo, que o
+   usuário explicitamente aceitou.
+
+### Vídeo de referência trocado (decisão do usuário)
+
+- **Novo:** `ia/samples/circuito_capixaba_final_bronze.mp4` —
+  "CIRCUITO CAPIXABA DE BASQUETE - FINAL BRONZE" (TV FECABA),
+  **1920x1080**, 1h53min, 2,3 GB. Baixado do YouTube com yt-dlp.
+- **Removido a pedido do usuário:** `COMETAS X CESB - RODADA 16 - LCB 2021.mp4`
+  (358 MB, era 640x360) e a pasta `runs/` na raiz de `Documentos/Python`
+  com o `.avi` derivado de **7,4 GB** (aquela sujeira sinalizada desde a
+  Sessão 6). Liberou ~7,8 GB. **A remoção foi feita só APÓS confirmar que o
+  vídeo novo processa** — era a única cópia, e o primeiro download tinha
+  falhado (ver abaixo). Se um dia precisar, o canal TV FECABA no YouTube é a
+  fonte provável.
+
+### Ganho medido com o vídeo em 1080p
+
+| classe | % frames (1080p) | % frames (640x360 antigo) |
+|---|---|---|
+| person | 98,7% (7,95/frame) | 95,7% (4,00/frame) |
+| basket | 59,6% | 58,4% |
+| **ball** | **36,7%** | ~4–6% (em quadra) |
+
+A bola saiu de ~5% para 36,7% dos frames — de inútil para utilizável. O
+filtro do placar descartou 7.085 falsos positivos nesse vídeo.
+
+### Três armadilhas que custaram retrabalho (documentadas)
+
+1. **Codec AV1.** O seletor `bv[height<=1080][ext=mp4]` deixou o YouTube
+   entregar AV1, que o OpenCV desta máquina não decodifica. O vídeo baixou
+   inteiro (2 GB) e só falhou ao processar (`Failed to get pixel format`).
+   Correção: `-f "bv*[vcodec^=avc1][height<=1080]"`.
+2. **`.part` escapando do `.gitignore`.** O yt-dlp grava o download em
+   andamento como `<nome>.mp4.part`, que **não casa** com `*.mp4`. Um
+   arquivo parcial de 667 MB entrou num commit e o GitHub recusou o push
+   (limite de 100 MB). Corrigido com `*.part` e `*.ytdl` no ignore, e o
+   commit foi refeito.
+3. **Artefatos de treino versionados.** Curvas, logs e `results.csv` do
+   treino estavam sendo rastreados (8,3 MB já no histórico) por um
+   `git add -A` descuidado. `ia/outputs/` foi para o `.gitignore`.
+
+**Status:** modelo treinado (mAP50 0,986 no dataset público), correções
+aplicadas, vídeo de referência em 1080p no lugar.
+
+**Próximos Passos na Retomada:**
+1. A bola ainda é o gargalo: 36,7% dos frames é bom, mas longe do ideal
+   para detectar cestas de forma confiável. **Anotar no CVAT** focando em
+   bola em quadra, e retreinar com os dois datasets (⚠️ ordem das classes:
+   `ball`, `basket`, `person` — os labels YOLO guardam o índice).
+2. Depois: lógica de cesta (bola cruzando o aro de cima para baixo) —
+   lógica temporal, não IA.
+3. Ligar o `main.py` ao `ClientePlacar` (gRPC). **Exige autorização
+   explícita** do usuário para alterar o `.py`.

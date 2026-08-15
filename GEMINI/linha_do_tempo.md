@@ -345,8 +345,8 @@ Reavaliar quando a IA virar um consumidor contínuo de stream da câmera.
 - Linguagem/framework a escolher (opções no chat) — consome a mesma API da Fase 4.
 
 ### Fase 10 — Testes de campo e documentação final
-- Testar com jogo real (já há vídeo de exemplo:
-  `COMETAS X CESB - RODADA 16 - LCB 2021.mp4`).
+- Testar com jogo real (vídeo de referência:
+  `ia/samples/circuito_capixaba_final_bronze.mp4`, 1920x1080, 1h53min).
 - Consolidar documentação do projeto (arquitetura final, decisões tomadas, licença).
 
 ---
