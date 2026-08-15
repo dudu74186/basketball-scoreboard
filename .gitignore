@@ -2,6 +2,13 @@
 *.mp4
 *.avi
 *.mov
+*.mkv
+*.webm
+# Downloads em andamento: o yt-dlp grava como "<nome>.mp4.part", que NAO
+# casa com *.mp4 e por isso escapava do ignore (um .part de 667MB chegou a
+# ser recusado pelo GitHub, que limita arquivos a 100MB).
+*.part
+*.ytdl
 *.pt
 *.onnx
 runs/

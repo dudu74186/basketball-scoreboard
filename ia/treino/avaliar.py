@@ -28,7 +28,11 @@ VIDEO = os.environ.get("VIDEO_SOURCE", str(RAIZ_IA / "samples" / "teste.mp4"))
 # Só processa 1 frame a cada N: para um diagnóstico não é preciso ver todos,
 # e o vídeo inteiro demoraria bem mais.
 PULO = int(os.environ.get("PULO", "5"))
-CONF = float(os.environ.get("CONF", "0.25"))
+
+# Resolução de inferência e filtro do placar vêm de ia/deteccao.py, para a
+# avaliação medir exatamente o que o serviço de inferência vai aplicar.
+sys.path.insert(0, str(RAIZ_IA))
+from deteccao import CONF, FAIXA_PLACAR, IMGSZ, eh_falso_positivo  # noqa: E402
 
 
 def main() -> int:
@@ -44,21 +48,28 @@ def main() -> int:
     modelo = YOLO(PESOS)
     nomes = modelo.names
     print(f"classes do modelo: {nomes}")
-    print(f"avaliando {Path(VIDEO).name} (1 frame a cada {PULO}, conf>={CONF})…\n")
+    print(f"avaliando {Path(VIDEO).name}")
+    print(f"  1 frame a cada {PULO}  ·  conf>={CONF}  ·  imgsz={IMGSZ}"
+          f"  ·  faixa do placar ignorada: {FAIXA_PLACAR:.0%}\n")
 
     total_por_classe = Counter()
     frames_com_classe = Counter()
+    descartadas = Counter()
     frames = 0
 
     resultados = modelo.predict(
-        VIDEO, stream=True, conf=CONF, verbose=False, vid_stride=PULO
+        VIDEO, stream=True, conf=CONF, verbose=False, vid_stride=PULO, imgsz=IMGSZ
     )
 
     for r in resultados:
         frames += 1
+        altura = r.orig_shape[0]
         presentes = set()
-        for caixa in r.boxes:
-            classe = nomes[int(caixa.cls)]
+        for cls, caixa in zip(r.boxes.cls, r.boxes.xywh):
+            classe = nomes[int(cls)]
+            if eh_falso_positivo(classe, float(caixa[1]), altura):
+                descartadas[classe] += 1
+                continue
             total_por_classe[classe] += 1
             presentes.add(classe)
         for classe in presentes:
@@ -75,6 +86,11 @@ def main() -> int:
         total = total_por_classe[classe]
         pct = 100 * frames_com_classe[classe] / frames
         print(f"{classe:<16}{total:>11}{total / frames:>11.2f}{pct:>9.1f}%")
+
+    if descartadas:
+        total_desc = sum(descartadas.values())
+        print(f"\n  {total_desc} detecções descartadas pelo filtro do placar "
+              f"({dict(descartadas)})")
 
     print(
         "\nO que olhar:\n"
