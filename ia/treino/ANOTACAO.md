@@ -92,9 +92,30 @@ no diário do projeto. Se quiser já deixar criadas, não atrapalha.)
 Dica: use **frame step** (ex.: 1 a cada 10) ao criar a tarefa. Frames
 consecutivos são quase idênticos e não agregam ao treino — só dão trabalho.
 
-**5. Auto-anotar com YOLO** para não começar do zero. O modelo genérico
-`yolo11n` já detecta pessoa e bola de fábrica; o aro precisará ser feito à
-mão até existir o primeiro modelo treinado.
+**5. Pré-anotar com o NOSSO modelo** — e não com a auto-anotação do CVAT.
+
+⚠️ A auto-anotação embutida (menu ⋮ → Automatic annotation) aparece **vazia**
+numa instalação padrão: ela exige subir o Nuclio
+(`components/serverless/docker-compose.serverless.yml`), instalar o `nuctl`
+e compilar cada função. E o único detector genérico disponível (YOLOv7/COCO)
+conhece `person` e `sports ball`, mas **não conhece `basket`** — todo esse
+trabalho e o aro continuaria manual.
+
+Nosso modelo já conhece as três classes:
+
+```bash
+cd ia/treino/
+python pre_anotar.py ../revisao/04_falhas/fp_01_t3692s.mp4
+```
+
+Gera um `.cvat.xml` ao lado do vídeo. No CVAT: abra a tarefa →
+menu ⋮ → **Upload annotations** → formato **CVAT for video 1.1**.
+
+O script emite **todas** as caixas de cada classe, não só a de maior
+confiança. Isso importa: exportar uma pessoa por frame, havendo oito em
+quadra, transformaria as outras sete em "fundo" no treino — ensinando o
+modelo a *não* detectar pessoas. As caixas são ligadas em tracks por
+sobreposição, para o CVAT oferecer interpolação na correção.
 
 **6. Corrigir usando track mode + interpolação.** Para o aro: marque num
 frame, marque de novo no último, e deixe a interpolação preencher.
