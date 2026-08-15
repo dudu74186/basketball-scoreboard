@@ -154,3 +154,30 @@ em cada pasta estão em `ia/revisao/LEIA-ME.md`.
 
 Convenção de nome: `<data>_<assunto>_<detalhe>.mp4`, ex.:
 `20260815_deteccao_1080p.mp4`.
+
+## Rastreamento e trajetória da bola
+
+```bash
+cd ia/treino/
+python avaliar_rastreamento.py              # compara os níveis
+INICIO=1800 DURACAO=90 python avaliar_rastreamento.py
+```
+
+⚠️ **O ByteTrack foi testado e descartado.** A intuição dizia que um
+rastreador ajudaria; a medição (60s do vídeo de referência) disse o
+contrário:
+
+| abordagem | frames com bola | maior sequência |
+|---|---|---|
+| detecção pura | 571 (31,7%) | 5,0s |
+| + ByteTrack | **493 (27,4%)** | 5,0s |
+| + ByteTrack + interpolação | 679 (37,7%) | 7,1s |
+| **detecção pura + interpolação** | **841 (46,7%)** | **7,1s** |
+
+O rastreador piorou a cobertura em 14%: ele só emite um track depois de
+confirmá-lo em vários frames seguidos, descartando detecções isoladas — que
+é justamente o que temos. Também trocou de ID 20 vezes em 60s.
+
+Quem dá o ganho é a **interpolação de lacunas** (`ia/rastreamento.py`), e
+ela não precisa de rastreador. Vale reavaliar o ByteTrack se um dia a
+detecção da bola ficar consistente.
