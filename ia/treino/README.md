@@ -200,3 +200,18 @@ e **não emite erro** — o prejuízo só aparece no resultado, horas depois.
 
 A validação usa **apenas o dataset público**, de propósito: manter a mesma
 régua é o que permite comparar o modelo novo com o `bola_aro_v1`.
+
+### Se o export do CVAT vier sem imagens
+
+É fácil esquecer de marcar *Save images* e receber um zip só com os `.txt`.
+Como o vídeo de origem está aqui, não precisa refazer:
+
+```bash
+python importar_cvat.py "../datasets/Video 1.zip" ../revisao/04_falhas/fp_01_t3692s.mp4 clipe1
+```
+
+O script extrai os frames do vídeo e os pareia com os labels pelo número do
+frame. ⚠️ Confira que o vídeo passado é mesmo o que foi anotado — parear
+labels de um clipe com imagens de outro produz lixo silenciosamente. Um
+jeito de verificar é comparar a posição do aro anotado com a detectada no
+vídeo: devem coincidir.
