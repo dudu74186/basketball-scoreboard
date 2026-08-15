@@ -40,6 +40,14 @@ import os
 # uma trajetória que pode não ter acontecido.
 LACUNA_MAX = int(os.environ.get("LACUNA_MAX", "15"))
 
+# Velocidade máxima plausível da bola, em pixels por frame (a 1080p).
+# Serve de teste de sanidade: se duas detecções exigem que a bola tenha
+# atravessado a quadra num piscar, quase certamente NÃO são a mesma bola —
+# é o modelo detectando objetos diferentes, e interpolar entre eles fabrica
+# uma trajetória que nunca existiu (foi assim que um falso positivo de cesta
+# apareceu: uma reta da mão do jogador até o aro, cruzando a linha).
+VELOCIDADE_MAX = float(os.environ.get("VELOCIDADE_MAX", "60"))
+
 # Mantido só para o script de comparação poder reproduzir a medição acima.
 # Não é usado no caminho normal — ver a explicação no topo do arquivo.
 RASTREADOR = os.environ.get("RASTREADOR", "bytetrack.yaml")
@@ -64,6 +72,13 @@ def interpolar_lacunas(posicoes: dict[int, tuple[float, float]],
             continue
 
         (x0, y0), (x1, y1) = posicoes[anterior], posicoes[seguinte]
+
+        # Teste de velocidade: distância percorrida por frame precisa ser
+        # plausível. Caso contrário são duas bolas diferentes, e ligar as
+        # duas com uma reta inventa movimento que não houve.
+        distancia = ((x1 - x0) ** 2 + (y1 - y0) ** 2) ** 0.5
+        if distancia / salto > VELOCIDADE_MAX:
+            continue
         for passo in range(1, salto):
             fracao = passo / salto
             completo[anterior + passo] = (
