@@ -8,6 +8,10 @@ runs/
 # Datasets de treino: milhares de imagens, rebaixáveis com
 # ia/treino/baixar_dataset.py.
 datasets/
+# Saídas de treino e inferência: pesos, curvas, logs e imagens de batch.
+# São artefatos gerados — reproduzíveis rodando o treino de novo. As
+# métricas que importam ficam registradas no diário do projeto.
+ia/outputs/
 
 # --- Python ---
 __pycache__/
