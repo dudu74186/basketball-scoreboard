@@ -135,3 +135,22 @@ avaliar um modelo parcial sem esperar o treino inteiro:
 ```bash
 PESOS=../outputs/treino/bola_aro_v1/weights/best.pt python avaliar.py
 ```
+
+## Vídeos para revisão humana (`ia/revisao/`)
+
+Fica fora do Git (tudo ali é gerado). Organizada na ordem do pipeline —
+cada etapa só faz sentido depois que a anterior está boa:
+
+| Pasta | Pergunta que responde |
+|---|---|
+| `01_deteccao/` | O modelo está vendo bola, aro e jogadores? |
+| `02_rastreamento/` | A bola tem trajetória contínua ou vira pontos soltos? |
+| `03_cestas/` | Os eventos marcados são cestas de verdade? |
+| `04_falhas/` | O que exatamente precisa ser ensinado ao modelo? |
+
+O `04_falhas/` alimenta a anotação no CVAT: em vez de anotar frames
+aleatórios, anota-se o que comprovadamente falha. Detalhes do que observar
+em cada pasta estão em `ia/revisao/LEIA-ME.md`.
+
+Convenção de nome: `<data>_<assunto>_<detalhe>.mp4`, ex.:
+`20260815_deteccao_1080p.mp4`.

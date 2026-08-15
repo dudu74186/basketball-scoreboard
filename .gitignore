@@ -19,6 +19,9 @@ datasets/
 # São artefatos gerados — reproduzíveis rodando o treino de novo. As
 # métricas que importam ficam registradas no diário do projeto.
 ia/outputs/
+# Vídeos anotados para revisão humana. Também gerados; a estrutura das
+# pastas está documentada em ia/treino/README.md.
+ia/revisao/
 
 # --- Python ---
 __pycache__/
