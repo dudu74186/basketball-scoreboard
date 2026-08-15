@@ -129,3 +129,24 @@ Ele consome memória à toa quando não está em uso:
 ```bash
 cd ~/ferramentas/cvat && docker compose stop
 ```
+
+## Baixando vídeos de jogo para teste
+
+```bash
+cd ia/samples/
+yt-dlp -f "bv*[vcodec^=avc1][height<=1080]" -o "nome_do_jogo.%(ext)s" "<url>"
+```
+
+Dois detalhes que já custaram retrabalho aqui:
+
+1. **Force o codec `avc1` (H.264).** Pedir só `[ext=mp4]` deixa o YouTube
+   entregar **AV1**, que o OpenCV desta máquina não decodifica — o vídeo
+   baixa inteiro (2 GB) e só na hora de processar aparece
+   `Failed to get pixel format`.
+2. **Sem áudio (`bv*`).** Visão computacional não usa a trilha, e baixar só
+   o vídeo economiza tempo e espaço.
+
+O `.gitignore` cobre `*.part` e `*.ytdl`: o yt-dlp grava o download em
+andamento como `<nome>.mp4.part`, que **não casa** com `*.mp4` e por isso
+escapava do ignore — um arquivo parcial de 667 MB chegou a ser recusado
+pelo GitHub, que limita a 100 MB por arquivo.
