@@ -181,3 +181,22 @@ confirmá-lo em vários frames seguidos, descartando detecções isoladas — qu
 Quem dá o ganho é a **interpolação de lacunas** (`ia/rastreamento.py`), e
 ela não precisa de rastreador. Vale reavaliar o ByteTrack se um dia a
 detecção da bola ficar consistente.
+
+## Juntando o dataset próprio ao público
+
+Depois de exportar do CVAT (formato **YOLOv8 Detection**, com *Save images*),
+descompacte uma pasta por tarefa em `ia/datasets/proprio/` e rode:
+
+```bash
+cd ia/treino/
+python juntar_datasets.py
+DATA_YAML=../datasets/combinado.yaml NOME_RUN=bola_aro_v2 python treinar.py
+```
+
+⚠️ O script **recusa a juntar** se a ordem das classes divergir entre os
+datasets. Não é excesso de zelo: os labels YOLO guardam o índice numérico,
+não o nome. Com `ball` sendo 0 num e 1 no outro, o treino aprende trocado
+e **não emite erro** — o prejuízo só aparece no resultado, horas depois.
+
+A validação usa **apenas o dataset público**, de propósito: manter a mesma
+régua é o que permite comparar o modelo novo com o `bola_aro_v1`.
