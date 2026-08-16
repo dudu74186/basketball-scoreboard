@@ -107,6 +107,25 @@ Primeiros passos concretos quando retomar:
 5. Ligar no gRPC: hoje o `main.py` só salva vídeo anotado, precisa passar a
    chamar o `ClientePlacar` ao detectar cesta.
 
+## ⏳ PENDENTE COM O USUÁRIO (lembrar ao retomar)
+
+**Classificar os 19 clipes de `ia/revisao/05_pontuacao/`.** Ele disse que
+faria depois. São os momentos em que o placar mudou, detectados por
+`ia/treino/momentos_pontuacao.py`.
+
+Para cada clipe, ele precisa dizer: **cesta de quadra, lance livre, ou falso
+positivo**. A jogada está nos primeiros 8 segundos (o placar sobe depois,
+com o atraso do mesário).
+
+**Por que isso importa:** é a única forma de medir o **recall real** do
+detector de cestas. Hoje o número (~50%) vem de inferência minha comparando
+placar em dois instantes, não de contagem.
+
+⚠️ **Já se sabe que a lista tem falsos positivos:** 19 eventos para 16
+pontos marcados é impossível (cada mudança vale ≥1 ponto). E há um bloco
+suspeito de **7 eventos entre 69min55s e 70min44s** (clipes 09 a 15) —
+sete pontuações em 49 segundos não acontece. Sugerido a ele começar por aí.
+
 **Regras de operação que continuam valendo** (detalhes em [[autorizacoes]] e
 [[funcoes]]): só editar diretamente dentro de `GEMINI/`; nunca editar `.py`
 ou `.md`/canvas fora da `GEMINI/` sem autorização explícita *a cada pedido*;
