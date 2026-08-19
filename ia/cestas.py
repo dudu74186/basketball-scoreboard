@@ -31,9 +31,17 @@ import os
 from statistics import median
 
 # Fração da largura da caixa do aro que conta como "passou por dentro".
-# A caixa detectada geralmente inclui a tabela; o cesto ocupa a parte
-# central. 0.45 = os 45% centrais da caixa.
-LARGURA_UTIL = float(os.environ.get("LARGURA_UTIL", "0.45"))
+#
+# Começou em 0.45, pensando que a caixa incluiria a tabela. Medindo no vídeo
+# real, a caixa do aro tem só ~65px a 1080p, então 0.45 dava um portão de
+# **30 pixels** — e uma cesta confirmada foi rejeitada por 10px de folga.
+# Como a posição da bola é o centro de uma caixa detectada, com tremida de
+# vários pixels, 10px está dentro do erro da própria medição: estávamos
+# descartando cesta por ruído.
+#
+# 0.8 é uma troca deliberada: aumenta o falso positivo, mas o gargalo hoje é
+# o recall (22%), não a precisão. Revisar quando o recall subir.
+LARGURA_UTIL = float(os.environ.get("LARGURA_UTIL", "0.8"))
 
 # Onde, dentro da caixa do aro, fica a linha do cesto (0 = topo, 1 = base).
 # A tabela ocupa a parte de cima, então o aro fica na metade inferior.
@@ -58,15 +66,26 @@ MIN_REAIS = int(os.environ.get("MIN_REAIS", "3"))
 def estabilizar_aro(aros: dict[int, tuple[int, int, int, int]],
                     total_frames: int,
                     janela: int = 150) -> dict[int, tuple[int, int, int, int]]:
-    """Preenche e suaviza a posição do aro ao longo do vídeo.
+    """Preenche as lacunas na posição do aro ao longo do vídeo.
 
-    O aro é detectado de forma intermitente (~60% dos frames), mas é uma
-    estrutura fixa: quando a câmera não se move, sua posição no quadro não
-    muda. Usar a mediana de uma janela ao redor de cada frame absorve tanto
-    as detecções faltantes quanto as caixas ligeiramente tremidas.
+    O aro é detectado de forma intermitente, mas é uma estrutura fixa: entre
+    duas detecções, ele só se move se a câmera se mover.
 
-    A mediana (e não a média) porque uma única detecção errada, muito longe
-    do lugar certo, deslocaria a média — a mediana a ignora.
+    **A versão anterior usava a mediana de uma janela para TODO frame,
+    inclusive os que tinham detecção própria — e isso era um defeito real:**
+    a mediana depende de quais frames caem na janela, então a posição
+    calculada mudava conforme o tamanho do trecho analisado. Uma cesta
+    detectada num recorte de 5 minutos podia sumir ao rodar 20 minutos, com
+    o mesmo vídeo e o mesmo modelo. Resultado dependente do tamanho do lote
+    é o tipo de comportamento que torna qualquer medição não confiável.
+
+    Agora:
+    - frame COM detecção usa a própria, que é a informação mais fiel àquele
+      instante (importa quando a câmera acompanha a jogada);
+    - frame SEM detecção interpola entre a detecção anterior e a seguinte,
+      o que é determinístico e não depende do tamanho da janela.
+
+    O parâmetro `janela` é mantido só por compatibilidade e não é mais usado.
     """
     if not aros:
         return {}
@@ -75,15 +94,23 @@ def estabilizar_aro(aros: dict[int, tuple[int, int, int, int]],
     estabilizado = {}
 
     for frame in range(total_frames):
-        proximos = [f for f in conhecidos if abs(f - frame) <= janela]
-        if not proximos:
-            # Fora de qualquer janela: usa a detecção mais próxima que existir.
-            proximos = [min(conhecidos, key=lambda f: abs(f - frame))]
+        if frame in aros:
+            estabilizado[frame] = aros[frame]
+            continue
 
-        caixas = [aros[f] for f in proximos]
-        estabilizado[frame] = tuple(
-            int(median(c[i] for c in caixas)) for i in range(4)
-        )
+        anteriores = [f for f in conhecidos if f < frame]
+        seguintes = [f for f in conhecidos if f > frame]
+
+        if anteriores and seguintes:
+            a, b = anteriores[-1], seguintes[0]
+            fracao = (frame - a) / (b - a)
+            estabilizado[frame] = tuple(
+                int(aros[a][i] + (aros[b][i] - aros[a][i]) * fracao) for i in range(4)
+            )
+        else:
+            # Antes da primeira ou depois da última: repete a mais próxima.
+            vizinho = (anteriores or seguintes)[-1 if anteriores else 0]
+            estabilizado[frame] = aros[vizinho]
 
     return estabilizado
 
