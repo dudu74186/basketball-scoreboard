@@ -421,6 +421,49 @@ treinar `yolo11s`/`m` em vez do `nano`. Recomendação dada: começar local
 (evita subir dados) e migrar para o Colab se ficar lento ou se quiser
 modelo maior. Nenhuma decisão tomada ainda.
 
+### 💡 Ideias do usuário para reduzir falso positivo (16/08/2026) — GUARDADAS PARA DEPOIS
+
+Propostas pelo usuário ao raciocinar sobre o caso irredutível da projeção 2D
+(bola passando na frente do aro parece igual a bola entrando).
+
+**Ideia 1 — trajetória alterada.** Se a bola passa pelo aro mas a trajetória
+não muda, não foi cesta: é fisicamente impossível tocar aro ou rede sem
+perder energia e desviar.
+
+*Análise:* a física está correta, mas medir isso com nosso dado é frágil.
+É informação de **segunda ordem** (mudança de velocidade) extraída de
+posições ruidosas — centro de caixa detectada, com tremida de pixels e
+boa parte interpolada. Some no erro de medição. Agrava que a bola já está
+em queda livre (a trajetória muda sempre, por gravidade), então seria
+preciso ajustar a parábola antes e comparar depois — justamente onde a
+detecção é pior, com a bola atrás da estrutura do aro.
+
+*Versão mais forte da mesma ideia:* em vez do desvio sutil, olhar a
+consequência grosseira — **onde a bola está 0,5–1s depois**. Entrou: cai
+quase vertical, abaixo do aro. Passou na frente: segue a parábola e vai
+para longe, lateralmente. Isso é diferença de POSIÇÃO (primeira ordem),
+muito mais robusta com dado ruidoso.
+
+**Ideia 2 — duas caixas, acima e abaixo do aro.** Obrigar a bola a passar
+pelas duas.
+
+*Análise:* mais prática que a ideia 1. É uma versão mais rígida da lógica
+atual, e acrescenta algo real: força a passagem a ser quase **vertical**.
+Bola cruzando na diagonal (típico de quem passa na frente) estaria dentro
+da janela horizontal no instante do cruzamento, mas fora dela alguns
+frames antes ou depois. Usa só posição, sem derivadas. Limitação: um
+arremesso de trajetória muito esticada que entra seria rejeitado (raro).
+
+**⚠️ Por que NÃO aplicar agora:** as duas melhoram a PRECISÃO, e o gargalo
+atual é o RECALL. Medido em 16/08/2026: precisão 25% (2/8), recall 22%
+(2/9). Eliminando *todos* os 6 falsos positivos, a precisão iria a 100% e
+continuaríamos detectando 2 de 9 pontuações. Pior: ambas são filtros mais
+restritivos, então aplicadas agora derrubariam o recall ainda mais.
+
+**Quando aplicar:** depois que o recall passar de ~70–80%. Aí os falsos
+positivos viram o problema dominante e as duas ideias (a versão forte da 1
+somada à 2) valem bastante.
+
 **Dois pontos práticos levantados:**
 1. **O gargalo real é o dataset, não o treino.** Anotar bola/aro em
    milhares de frames à mão é inviável. Procurar dataset público de
