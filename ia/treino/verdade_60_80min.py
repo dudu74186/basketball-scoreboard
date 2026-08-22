@@ -46,9 +46,56 @@ EVENTOS = [
 CANDIDATOS_V2 = [3692, 3765, 3919, 4117, 4312, 4464, 4609, 4751]
 
 # Quanto tempo o mesário leva para atualizar o placar depois da jogada.
-# Um candidato casa com um evento se a mudança de placar vier nessa janela
-# depois dele.
+#
+# ⚠️ Esta janela mostrou-se **apertada demais** e subestimou o desempenho.
+# Em lance livre o mesário marca na hora, às vezes ANTES de o detector
+# registrar o cruzamento: um acerto confirmado teve o placar subindo 11s
+# antes do candidato. Casar por tempo é frágil — a classificação direta
+# abaixo (CLASSIFICACAO_CANDIDATOS) é a fonte confiável.
 ATRASO_MIN, ATRASO_MAX = -3, 20
+
+# ---------------------------------------------------------------------------
+# Classificação humana dos 13 candidatos do detector de cestas
+# (lógica corrigida: LARGURA_UTIL=0.8 e estabilizar_aro determinista).
+# Feita pelo usuário em 22/08/2026, assistindo cada clipe.
+#
+# É a medição mais confiável que temos: não depende de casar timestamps.
+# ---------------------------------------------------------------------------
+CLASSIFICACAO_CANDIDATOS = {
+    # nº: (segundo, acertou?, o que era)
+    1:  (3692, True,  "cesta"),
+    2:  (3714, True,  "lance_livre"),
+    3:  (3757, False, "bola passa na frente do aro"),
+    4:  (3813, True,  "lance_livre"),
+    5:  (3919, True,  "cesta"),        # o placar NÃO registrou este
+    6:  (3981, False, ""),
+    7:  (4116, False, ""),
+    8:  (4154, True,  "lance_livre"),  # o placar NÃO registrou este
+    9:  (4239, False, "bola passa na frente do aro"),
+    10: (4271, True,  "cesta"),
+    11: (4312, True,  "cesta"),
+    12: (4533, True,  "lance_livre"),  # placar subiu 11s ANTES do candidato
+    13: (4751, False, ""),
+}
+
+# Pontuações reais que NENHUM dos dois detectores achou até agora.
+# Vieram da lista do placar e continuam sem candidato correspondente.
+AINDA_PERDIDAS = [
+    (4019, "lance_livre"),
+    (4195, "cesta"),
+    (4200, "cesta"),   # a 5s da anterior — conferir se não é a mesma jogada
+]
+
+# RESULTADO MEDIDO (22/08/2026), lógica corrigida + pesos v2:
+#
+#   precisão .... 8/13 = 62%
+#   recall ...... 8/11 = 73%
+#
+# O denominador do recall é 11, não 9: os candidatos 5 e 8 são pontuações
+# reais que o detector de PLACAR perdeu. Isso também explica a diferença de
+# 2 pontos notada antes (o placar somava 14 dos 16 medidos na janela).
+#
+# Números anteriores, com a régua errada: 38% de precisão e 56% de recall.
 
 
 def reais():
